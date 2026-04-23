@@ -18,9 +18,9 @@ User says any of: `z <query>`, `/z <query>`, `jump to <name>`, `go to <name>`, `
 ## How It Works
 
 1. Run `zoxide query <keywords>` to get the best-match directory path
-2. If one result, use the `/cwd` slash command to change to it
+2. Output the `/cwd <path>` command for the user to run (slash commands cannot be invoked programmatically)
 3. If ambiguous, run `zoxide query -l -s <keywords>` to list matches with scores, present top 5 to user, let them pick
-4. After changing, briefly confirm the new directory
+4. Format: just output `/cwd <resolved-path>` on its own line so user can copy-paste or run it
 
 ## Commands
 
@@ -45,10 +45,16 @@ zoxide query -l -s
 ## Example Flows
 
 User: `z work`
-→ Run `zoxide query work` → get `/home/kvwu/work` → `/cwd /home/kvwu/work` → "Jumped to ~/work"
+→ Run `zoxide query work` → get `/home/kvwu/work` → output:
+```
+/cwd /home/kvwu/work
+```
 
 User: `z qmk`
-→ Run `zoxide query qmk` → get `/home/kvwu/qmk_firmware` → `/cwd /home/kvwu/qmk_firmware` → "Jumped to ~/qmk_firmware"
+→ Run `zoxide query qmk` → get `/home/kvwu/qmk_firmware` → output:
+```
+/cwd /home/kvwu/qmk_firmware
+```
 
 User: `z org`
-→ Run `zoxide query org` → multiple matches → show list → user picks → `/cwd <chosen>`
+→ Run `zoxide query org` → multiple matches → show list → user picks → output `/cwd <chosen>`
