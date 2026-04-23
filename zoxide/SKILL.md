@@ -38,23 +38,28 @@ zoxide query -l -s
 ## Rules
 
 - Always use `zoxide query` (not `z` or `zi` — those are shell aliases that don't work in subshells)
-- Pass result to `/cwd` slash command — do NOT use `cd` in bash (that only affects the subshell)
+- The agent cannot invoke `/cwd` directly — it's a slash command only the user can run
+- After resolving the path, copy `/cwd <path>` to the system clipboard so the user can just paste
+- Clipboard commands by platform:
+  - Linux (Wayland): `echo '/cwd <path>' | wl-copy`
+  - Linux (X11): `echo '/cwd <path>' | xclip -selection clipboard`
+  - macOS: `echo '/cwd <path>' | pbcopy`
+  - Windows/PowerShell: `Set-Clipboard '/cwd <path>'`
+- Auto-detect: try `wl-copy` first, fall back to `xclip`, `pbcopy`, or note if none available
 - If zoxide returns nothing, say so and suggest `zoxide query -l -s` to browse
-- Keep responses short: just the jump confirmation or the pick-list
+- Keep responses short: confirm what was copied, tell user to paste
 
 ## Example Flows
 
 User: `z work`
-→ Run `zoxide query work` → get `/home/kvwu/work` → output:
-```
-/cwd /home/kvwu/work
-```
+→ Run `zoxide query work` → get `/home/kvwu/work`
+→ Run `echo '/cwd /home/kvwu/work' | wl-copy`
+→ "Copied to clipboard — paste to jump."
 
 User: `z qmk`
-→ Run `zoxide query qmk` → get `/home/kvwu/qmk_firmware` → output:
-```
-/cwd /home/kvwu/qmk_firmware
-```
+→ Run `zoxide query qmk` → get `/home/kvwu/qmk_firmware`
+→ Copy `/cwd /home/kvwu/qmk_firmware` to clipboard
+→ "Copied to clipboard — paste to jump."
 
 User: `z org`
-→ Run `zoxide query org` → multiple matches → show list → user picks → output `/cwd <chosen>`
+→ Run `zoxide query org` → multiple matches → show list → user picks → copy `/cwd <chosen>` to clipboard
