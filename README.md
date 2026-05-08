@@ -18,6 +18,18 @@ npx skills add TransientError/agent-skills
 
 **Usage:** Just say `z <query>` in your Copilot CLI session.
 
+### presenterm
+
+Generate terminal-based presentation slides in [presenterm](https://github.com/mfontanini/presenterm) markdown format. Covers slide syntax, comment commands, code blocks, layouts, diagrams, and themes.
+
+**Install:**
+
+```bash
+npx skills add TransientError/agent-skills
+```
+
+**Usage:** Ask to "make slides", "create presentation", or mention "presenterm" in your Copilot CLI session.
+
 ## License
 
 MIT

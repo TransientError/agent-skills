@@ -210,7 +210,6 @@ presenterm slides.md --listen-speaker-notes
 - **Windows terminal:** Windows Terminal with sixel support
   - May need `defaults.image_protocol: sixel` in presenterm config if auto-detect fails
 - **Code theme:** `base16-ocean.dark` (default preference — ask user if they want different)
-- **Mermaid:** installed via `pacman -S mermaid-cli` on Arch/Manjaro
 
 ## Tips for Generating Good Slides
 
