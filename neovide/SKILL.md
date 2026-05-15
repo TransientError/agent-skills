@@ -9,8 +9,105 @@ description: >
 
 # Neovide Session Manager
 
-Launch a Neovide GUI window tied to this Copilot CLI session. Open files and
-jump to specific lines as things come up in conversation.
+## ⚠️ IMMEDIATE ACTION REQUIRED
+
+When this skill is loaded, you MUST execute the workflow below to open the
+requested file in Neovide. Do NOT use `Start-Process` on the file (that opens
+the OS default app). Files are ONLY opened through `nvim --server ... --remote`.
+
+**Workflow: Check → Launch → Wait → Open**
+
+Run the appropriate script for the current OS using the `powershell` tool.
+The file path and optional line number come from the user's request or
+conversation context. Resolve relative paths to absolute before use.
+
+### Windows (PowerShell)
+
+```powershell
+$sessionId = $env:COPILOT_AGENT_SESSION_ID
+$server = "\\.\pipe\nvim-copilot-$sessionId"
+$file = "<ABSOLUTE_FILE_PATH>"   # Replace with actual path
+# $line = <LINE_NUMBER>          # Uncomment if jumping to a line
+
+# 1. Check if Neovide is already running
+$running = $false
+try {
+    nvim --server $server --remote-expr "1" 2>$null
+    if ($LASTEXITCODE -eq 0) { $running = $true }
+} catch { }
+
+# 2. Launch Neovide if not running
+if (-not $running) {
+    Start-Process neovide -ArgumentList @('--', '--listen', $server)
+
+    # 3. Wait for server to become ready (up to 10s)
+    $ready = $false
+    for ($i = 0; $i -lt 20; $i++) {
+        Start-Sleep -Milliseconds 500
+        try {
+            nvim --server $server --remote-expr "1" 2>$null
+            if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+        } catch { }
+    }
+    if (-not $ready) {
+        Write-Error "Neovide server did not become ready within 10 seconds."
+        return
+    }
+}
+
+# 4. Open file (or file at line)
+if ($line) {
+    nvim --server $server --remote-send ":e +$line $file`n"
+} else {
+    nvim --server $server --remote $file
+}
+
+Write-Host "Opened in Neovide: $file"
+```
+
+### macOS / Linux (bash)
+
+```bash
+sessionId="$COPILOT_AGENT_SESSION_ID"
+server="/tmp/nvim-copilot-$sessionId"
+file="<ABSOLUTE_FILE_PATH>"   # Replace with actual path
+# line=<LINE_NUMBER>           # Uncomment if jumping to a line
+
+# 1. Check if Neovide is already running
+if nvim --server "$server" --remote-expr "1" 2>/dev/null; then
+    running=true
+else
+    running=false
+fi
+
+# 2. Launch Neovide if not running
+if [ "$running" = false ]; then
+    neovide --fork -- --listen "$server"
+
+    # 3. Wait for server to become ready (up to 10s)
+    ready=false
+    for i in $(seq 1 20); do
+        sleep 0.5
+        if nvim --server "$server" --remote-expr "1" 2>/dev/null; then
+            ready=true
+            break
+        fi
+    done
+    if [ "$ready" = false ]; then
+        echo "ERROR: Neovide server did not become ready within 10 seconds." >&2
+        exit 1
+    fi
+fi
+
+# 4. Open file (or file at line)
+if [ -n "$line" ]; then
+    nvim --server "$server" --remote-send ":e +${line} ${file}\n"
+else
+    nvim --server "$server" --remote "$file"
+fi
+
+echo "Opened in Neovide: $file"
+```
 
 ## When to Activate
 
@@ -20,99 +117,52 @@ User explicitly asks to see a file in the editor. Examples:
 - "can you show me the function we're talking about"
 - "open this in the editor"
 - "neovide this"
+- "open it" (when a file is being discussed)
 
 Do NOT auto-trigger on `view` or `edit` tool usage.
 
-## Session Socket
+## Server Address
 
-The socket path is deterministic per session:
+The server address is deterministic per session, derived from `$env:COPILOT_AGENT_SESSION_ID`:
 
-```
-/tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID}
-```
-
-The env var `COPILOT_AGENT_SESSION_ID` is always available.
-
-## Commands
-
-### Check if session Neovide is already running
-
-```bash
-nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-expr 'v:servername' 2>/dev/null
-```
-
-If this succeeds, the instance is alive. Skip launching.
-
-### Launch Neovide (if not running)
-
-```bash
-neovide --fork -- --listen /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID}
-```
-
-Wait ~2 seconds after launch for the socket to be ready before sending commands.
-Verify with the check command above.
-
-### Open a file
-
-```bash
-nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote <filepath>
-```
-
-### Open a file at a specific line
-
-```bash
-nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-send ':e +<line> <filepath><CR>'
-```
-
-Replace `<line>` with the line number and `<filepath>` with the absolute path.
-Escape spaces in paths with `\ ` or wrap in single quotes inside the command string.
-
-### Close the session Neovide
-
-```bash
-nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-send ':qa!<CR>'
-```
+| OS      | Address format                                           |
+|---------|----------------------------------------------------------|
+| Windows | `\\.\pipe\nvim-copilot-<SESSION_ID>`                     |
+| Unix    | `/tmp/nvim-copilot-<SESSION_ID>`                         |
 
 ## Lifecycle Rules
 
-1. **Before launching:** Always check if the socket is already alive.
+1. **Before launching:** Always probe with `nvim --server $server --remote-expr "1"`. Do NOT use `Test-Path` or file-existence checks — use the active probe.
 2. **One instance per session:** Never spawn a second Neovide for the same session.
-3. **Launch method:** Use `neovide --fork` so the bash call returns immediately. Use `detach: true` in async mode if running from the agent.
-4. **After launching:** Wait 2 seconds, then verify the socket is responsive.
-5. **On session end:** Close the Neovide instance with `:qa!` via remote-send. This is the agent's responsibility when the user says they're done or the session is ending.
-6. **Stale sockets:** If the check command fails but the socket file exists, remove it (`rm /tmp/nvim-copilot-...`) before relaunching.
+3. **Launch method:** Windows: `Start-Process neovide`. Unix: `neovide --fork`.
+4. **After launching:** Poll for readiness (up to 10s) before opening files.
+5. **On session end:** Close with `nvim --server $server --remote-send ":qa!\n"`.
 
-## Example Flows
+## Closing Neovide
 
-### First time opening a file
+When the user says "close neovide", "we're done", or the session is ending:
 
-User: "show me src/auth/login.rs"
+**Windows:**
+```powershell
+$server = "\\.\pipe\nvim-copilot-$env:COPILOT_AGENT_SESSION_ID"
+nvim --server $server --remote-send ":qa!`n"
+```
 
-1. Check socket: `nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-expr 'v:servername' 2>/dev/null`
-2. Not running → Launch: `neovide --fork -- --listen /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID}`
-3. Wait 2s, verify socket
-4. Open file: `nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote src/auth/login.rs`
-5. "Opened `src/auth/login.rs` in Neovide."
+**Unix:**
+```bash
+nvim --server "/tmp/nvim-copilot-$COPILOT_AGENT_SESSION_ID" --remote-send ':qa!\n'
+```
 
-### Opening at a specific line (instance already running)
+## Error Handling
 
-User: "show me the handler at line 142"
-
-1. Check socket → alive
-2. Open at line: `nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-send ':e +142 /absolute/path/to/file.rs<CR>'`
-3. "Jumped to line 142 in `file.rs`."
-
-### Closing
-
-User: "close neovide" / "we're done" / session ending
-
-1. `nvim --server /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID} --remote-send ':qa!<CR>'`
-2. `rm -f /tmp/nvim-copilot-${COPILOT_AGENT_SESSION_ID}` (cleanup stale socket if needed)
-3. "Neovide closed."
+- If `neovide` is not on PATH → tell the user Neovide is not installed.
+- If `nvim` is not on PATH → tell the user Neovim is not installed.
+- If the server doesn't become ready after 10s → tell the user the launch failed.
+- If `--remote` exits nonzero → tell the user the file could not be opened.
 
 ## Tips
 
-- Always use absolute paths when opening files via remote-send
-- The agent should resolve relative paths to absolute before sending
-- If the user says "show me that function" after discussing code, look up the file + line from context and open it
-- Multiple files can be opened in sequence — they'll appear as buffers in the same Neovide instance
+- Always use **absolute paths** when opening files.
+- Resolve relative paths before sending to `nvim --server`.
+- If the user says "show me that function", look up the file + line from context.
+- Multiple files can be opened in sequence — they appear as buffers in the same instance.
