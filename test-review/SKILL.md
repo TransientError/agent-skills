@@ -22,6 +22,8 @@ Perform an adversarial review of test code, especially tests written by AI agent
 
 Unless the user explicitly asks to review all tests, **only review new or changed tests** — i.e., tests that appear in the current diff or were just created. Do not re-review the entire test suite every time.
 
+**Before starting the review, list the test files/functions you plan to review and confirm with the user.** This gives them a chance to expand or narrow the scope.
+
 ## Review Checklist
 
 ### 1. Coverage Gaps
