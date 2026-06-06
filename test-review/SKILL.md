@@ -76,9 +76,19 @@ Severities:
 - **WARNING** — Test is weak or fragile; may not catch regressions
 - **INFO** — Minor improvement opportunity
 
-## Model
+## Invocation
 
-Use `gpt-5.5` for this skill. Cross-model review reduces correlated blind spots — a different model family is less likely to share the same assumptions that produced the tests.
+Use the **rubber-duck** agent with model override `gpt-5.5`. Include the review checklist (sections 1–5 above) in the prompt along with the test code to review.
+
+```
+task(
+  agent_type: "rubber-duck",
+  model: "gpt-5.5",
+  prompt: "<review checklist from this skill> + <test code under review>"
+)
+```
+
+Cross-model review reduces correlated blind spots — a different model family is less likely to share the same assumptions that produced the tests.
 
 ## Principles
 
