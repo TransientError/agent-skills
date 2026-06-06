@@ -18,6 +18,10 @@ Perform an adversarial review of test code, especially tests written by AI agent
 - User mentions tests were AI-generated and wants a sanity check
 - During code review when test files are in the diff
 
+## Scope
+
+Unless the user explicitly asks to review all tests, **only review new or changed tests** — i.e., tests that appear in the current diff or were just created. Do not re-review the entire test suite every time.
+
 ## Review Checklist
 
 ### 1. Coverage Gaps
