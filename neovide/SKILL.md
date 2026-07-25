@@ -80,9 +80,15 @@ else
     running=false
 fi
 
-# 2. Launch Neovide if not running
+# 2. Launch Neovide if not running.
+#    IMPORTANT (Linux/macOS): redirect ALL stdio and detach. Even with
+#    --fork, Neovide keeps the inherited stdout/stderr fds open, which holds
+#    the agent's bash pipe open. The launch command then never "returns", so
+#    the Wait/Open steps below never run and the whole workflow appears to
+#    hang. Redirecting to /dev/null frees the pipe so the command returns
+#    immediately while Neovide keeps running.
 if [ "$running" = false ]; then
-    neovide --fork -- --listen "$server"
+    neovide --fork -- --listen "$server" >/dev/null 2>&1 </dev/null
 
     # 3. Wait for server to become ready (up to 10s)
     ready=false
@@ -134,7 +140,7 @@ The server address is deterministic per session, derived from `$env:COPILOT_AGEN
 
 1. **Before launching:** Always probe with `nvim --server $server --remote-expr "1"`. Do NOT use `Test-Path` or file-existence checks — use the active probe.
 2. **One instance per session:** Never spawn a second Neovide for the same session.
-3. **Launch method:** Windows: `Start-Process neovide`. Unix: `neovide --fork`.
+3. **Launch method:** Windows: `Start-Process neovide`. Unix: `neovide --fork` **with all stdio redirected** — `>/dev/null 2>&1 </dev/null` — so it detaches from the agent's shell pipe. Without this the launch command never completes and the Wait→Open steps are blocked. In the Copilot CLI `bash` tool specifically, run the launch as a detached background command (`mode: async`, `detach: true`) for the same reason.
 4. **After launching:** Poll for readiness (up to 10s) before opening files.
 5. **On session end:** Close with `nvim --server $server --remote-send ":qa!\n"`.
 
