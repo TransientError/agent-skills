@@ -84,12 +84,12 @@ Severities:
 
 ## Invocation
 
-Use the **rubber-duck** agent with model override `gpt-5.5`. Include the review checklist (sections 1–5 above) in the prompt along with the test code to review.
+Use the **rubber-duck** agent with model override `gpt-5.6-sol`. Include the review checklist (sections 1–5 above) in the prompt along with the test code to review.
 
 ```
 task(
   agent_type: "rubber-duck",
-  model: "gpt-5.5",
+  model: "gpt-5.6-sol",
   prompt: "<review checklist from this skill> + <test code under review>"
 )
 ```
