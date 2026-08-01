@@ -38,6 +38,14 @@ Open a Windows file in GNU Emacs running inside WSL, displayed on the Windows de
 
 **Prerequisites:** WSL with a distro that has Emacs installed, and [VcXsrv](https://sourceforge.net/projects/vcxsrv/).
 
+### paste-image
+
+Paste an image from the clipboard directly into the conversation, like Ctrl+V on desktop. Slurps the Wayland clipboard with `wl-paste` into the current session's `files/` directory (no clutter, no extra directory-permission prompts), then views it.
+
+**Trigger:** "paste", "paste image", "paste screenshot", "clip", "clipboard image", or referring to an image you just copied.
+
+**Prerequisites:** [wl-clipboard](https://github.com/bugaevc/wl-clipboard) (`wl-paste`) on Wayland; `xclip` fallback on X11.
+
 ### presenterm
 
 Generate terminal-based presentation slides in [presenterm](https://github.com/mfontanini/presenterm) markdown format. Covers slide syntax, comment commands, code blocks, layouts, diagrams, and themes.
