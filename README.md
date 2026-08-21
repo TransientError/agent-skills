@@ -46,6 +46,14 @@ Prettify Markdown meant for human consumption so the raw source is readable — 
 
 **Prerequisites:** PowerShell Core (`pwsh`) on Windows, or Python 3 on Linux/macOS.
 
+### reveal-in-explorer
+
+Open Windows File Explorer to the folder **containing** a file we've been working on — handy for dragging it elsewhere. Opens the folder plainly by default; highlights/selects the file only when you say "select". **Windows-only.**
+
+**Trigger:** "reveal", "reveal in Explorer", "show in Explorer", "open the containing folder", "open the folder for this file". Add "select" to highlight the file.
+
+**Prerequisites:** Windows with PowerShell and `explorer.exe`.
+
 ### test-review
 
 Adversarial review of AI-generated tests. Checks for adequate coverage, trivial/tautological assertions, logic bypass, and other ways tests can "cheat" instead of genuinely exercising the code under test.
