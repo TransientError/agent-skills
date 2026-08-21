@@ -38,6 +38,14 @@ Generate terminal-based presentation slides in [presenterm](https://github.com/m
 
 **Prerequisites:** [presenterm](https://github.com/mfontanini/presenterm) must be installed.
 
+### prettify-markdown
+
+Prettify Markdown meant for human consumption so the raw source is readable — starting with aligning table columns (padding cells so the pipes line up). Applies only to human-facing Markdown (READMEs, docs, reports, PR descriptions), not agent-to-agent output.
+
+**Trigger:** "prettify markdown", "clean up this markdown", "align the table", "make the raw markdown readable", "format markdown tables".
+
+**Prerequisites:** PowerShell Core (`pwsh`) on Windows, or Python 3 on Linux/macOS.
+
 ### test-review
 
 Adversarial review of AI-generated tests. Checks for adequate coverage, trivial/tautological assertions, logic bypass, and other ways tests can "cheat" instead of genuinely exercising the code under test.
