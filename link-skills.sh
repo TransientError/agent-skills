@@ -61,6 +61,13 @@ for dir in "$REPO_ROOT"/*/; do
     name="$(basename "$dir")"
     target="$SKILLS_DEST/$name"
 
+    # Platform gate: this installer targets Linux/macOS, so skip skills whose
+    # SKILL.md frontmatter declares Windows-only compatibility.
+    if ! $REMOVE && grep -qiE '^compatibility:[[:space:]]*windows only' "$dir/SKILL.md"; then
+        echo "Skipped: $name (Windows-only skill)"
+        continue
+    fi
+
     # Editor skill gate: skip if binary missing or another editor already linked
     if is_editor_skill "$name" && ! $REMOVE; then
         if $editor_linked; then
