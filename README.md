@@ -30,6 +30,14 @@ Launch and manage a per-session Neovide instance from Copilot CLI. Open files an
 
 **Prerequisites:** [Neovide](https://neovide.dev/) must be installed.
 
+### open-in-emacs-wsl
+
+Open a Windows file in GNU Emacs running inside WSL, displayed on the Windows desktop via VcXsrv (not WSLg). Starts VcXsrv itself if it isn't running; if VcXsrv is running but misconfigured, it only warns and leaves restarting it to an explicit, user-confirmed step. **Windows-only.**
+
+**Trigger:** "open in emacs", "open this in emacs", "open the todo in emacs".
+
+**Prerequisites:** WSL with a distro that has Emacs installed, and [VcXsrv](https://sourceforge.net/projects/vcxsrv/).
+
 ### presenterm
 
 Generate terminal-based presentation slides in [presenterm](https://github.com/mfontanini/presenterm) markdown format. Covers slide syntax, comment commands, code blocks, layouts, diagrams, and themes.
