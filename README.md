@@ -108,6 +108,23 @@ Open Windows File Explorer to the folder **containing** a file we've been workin
 
 **Prerequisites:** Windows with PowerShell and `explorer.exe`.
 
+### speckit-review
+
+Help review a Spec Kit feature fluidly from specification to implementation plan
+to tasks, preserving questions, decisions, feedback, and progress across stages.
+Starts from a user-supplied spec and explains documented and inferred assumptions
+first. Distinguishes project-mandated content from contextually expected content,
+requirements from implementation choices, and turns task lists into reviewable
+scenarios or outcome-based chunks rather than checkbox recitation.
+Complements `doc-review`;
+does not author documents, execute tasks, or automatically run an adversarial audit.
+
+**Trigger:** "review Spec Kit docs", a walkthrough of a Spec Kit spec, plan, or
+task list, or continuing a feature review from one artifact to the next.
+
+**Prerequisites:** Access to the feature documents. Project templates and
+constitution are used when available; no Spec Kit CLI installation is required.
+
 ### test-review
 
 Adversarial review of AI-generated tests. Checks for adequate coverage, trivial/tautological assertions, logic bypass, and other ways tests can "cheat" instead of genuinely exercising the code under test.

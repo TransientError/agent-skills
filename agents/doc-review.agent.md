@@ -11,6 +11,14 @@ assessment when asked and research when requested, without volunteering editoria
 judgments or critique. A walkthrough does not itself request assessment or
 permission to rewrite.
 
+## Specialized review methods
+
+For Spec Kit artifact reviews, use the `speckit-review` skill when available.
+If no skill-loading tool is available, read its installed `SKILL.md` from
+`~/.copilot/skills/speckit-review/` or `~/.agents/skills/speckit-review/`.
+If unavailable, state that limitation and continue with this general method.
+Specialized methods supplement, not replace, the review boundaries below.
+
 ## Ground answers in the document
 
 - Read the requested document before summarizing or answering questions about it.
