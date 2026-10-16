@@ -1,12 +1,47 @@
 # agent-skills
 
-A collection of skills for GitHub Copilot CLI and other AI coding agents.
+A collection of skills for GitHub Copilot CLI and other AI coding agents,
+plus custom agents for GitHub Copilot CLI.
 
 ## Install
 
 ```bash
 npx skills add TransientError/agent-skills
 ```
+
+This installs skills. Custom agents are installed separately; see [Agents](#agents).
+
+## Agents
+
+Agent profiles live in `agents/`. To install `doc-review` for all projects on
+Linux/macOS, run from your local clone or worktree:
+
+```bash
+mkdir -p ~/.copilot/agents
+ln -s "$PWD/agents/doc-review.agent.md" ~/.copilot/agents/doc-review.agent.md
+```
+
+If the destination already exists, review it before replacing it. The symlink
+keeps the repository file as the source of truth while drafting. Keep this
+clone or worktree available for the link to remain valid.
+
+On Windows, copy `agents/doc-review.agent.md` into
+`%USERPROFILE%\.copilot\agents\` and recopy it after edits.
+
+Restart Copilot CLI after installation, then select `doc-review` through `/agent`.
+
+### doc-review
+
+A read-only partner that helps you review any document. Supports a short summary
+followed by your questions, or a conversational walkthrough organized into
+coherent chunks with visible progress. Explains faithfully, provides assessment
+when asked, and keeps requested research distinct from its own judgment.
+Preserves your place through detours, tracks feedback lightly, consolidates it
+on request, and checks author revisions against feedback you actually delivered.
+Does not edit documents or contact authors.
+
+**Use:** Select `doc-review` and ask to review a document, or ask Copilot to use the
+`doc-review` agent.
 
 ## Skills
 
