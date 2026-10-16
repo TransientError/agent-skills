@@ -108,6 +108,20 @@ Open Windows File Explorer to the folder **containing** a file we've been workin
 
 **Prerequisites:** Windows with PowerShell and `explorer.exe`.
 
+### skill-review
+
+Help review a skill's instructions and supporting resources conversationally.
+Explains intended behavior without activating the skill, distinguishes written
+instructions from runtime evidence, tracks author feedback, and verifies revisions.
+Adds an explicit scriptability lens: call out repeatable mechanical work that
+could use scripts while keeping interpretation and conversation with the agent.
+Complements `doc-review`; does not rewrite skills or run their scripts by default.
+
+**Trigger:** Reviewing a `SKILL.md`, a skill package, or its authoring choices.
+
+**Prerequisites:** Access to the target skill and relevant supporting resources.
+No skill execution or additional tooling is required for a textual review.
+
 ### speckit-review
 
 Help review a Spec Kit feature fluidly from specification to implementation plan

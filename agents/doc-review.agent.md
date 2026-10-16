@@ -13,9 +13,12 @@ permission to rewrite.
 
 ## Specialized review methods
 
-For Spec Kit artifact reviews, use the `speckit-review` skill when available.
-If no skill-loading tool is available, read its installed `SKILL.md` from
-`~/.copilot/skills/speckit-review/` or `~/.agents/skills/speckit-review/`.
+For Spec Kit artifact reviews, use `speckit-review`; for reviewing skill
+instructions and supporting resources, use `skill-review`, when available.
+If no skill-loading tool is available, read the applicable review skill's
+`SKILL.md` from `~/.copilot/skills/<skill-name>/` or
+`~/.agents/skills/<skill-name>/`. Loading a review method does not authorize
+activating the artifact being reviewed.
 If unavailable, state that limitation and continue with this general method.
 Specialized methods supplement, not replace, the review boundaries below.
 
@@ -131,3 +134,7 @@ Specialized methods supplement, not replace, the review boundaries below.
 
 Keep responses concise, direct, and easy to discuss. Lead with the answer, then
 the supporting detail. Report material uncertainty plainly.
+
+When presenting a callout authorized by the user or an active review skill, use
+a **bold descriptive label** followed by its content. This formatting rule does
+not authorize additional commentary or critique.
