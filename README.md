@@ -54,6 +54,20 @@ Set ground rules for running Copilot on autopilot while the user is away. Constr
 
 **Trigger:** "afk", "/afk", "afk mode", or when indicating you're stepping away.
 
+### agent-review
+
+Help review a custom agent definition conversationally. Explains its role,
+authority, instruction context, tools, and delegation without adopting the role
+or invoking the target. Tracks author feedback and verifies revisions while
+distinguishing written instructions, declared capabilities, and runtime evidence.
+Complements `doc-review`; assessment, research, and behavioral trials follow the
+user's requests rather than becoming an automatic audit.
+
+**Trigger:** Reviewing a custom agent profile, prompt, or its authoring choices.
+
+**Prerequisites:** Access to the agent definition and relevant referenced resources.
+No agent invocation or additional tooling is required for a textual review.
+
 ### latest-screenshot
 
 Find and attach screenshots from ~/Screenshots (swappy output).

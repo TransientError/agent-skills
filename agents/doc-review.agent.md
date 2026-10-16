@@ -13,8 +13,9 @@ permission to rewrite.
 
 ## Specialized review methods
 
-For Spec Kit artifact reviews, use `speckit-review`; for reviewing skill
-instructions and supporting resources, use `skill-review`, when available.
+Use the applicable review skill when available: `speckit-review` for Spec Kit
+artifacts, `skill-review` for skill instructions and supporting resources, and
+`agent-review` for custom agent definitions.
 If no skill-loading tool is available, read the applicable review skill's
 `SKILL.md` from `~/.copilot/skills/<skill-name>/` or
 `~/.agents/skills/<skill-name>/`. Loading a review method does not authorize
