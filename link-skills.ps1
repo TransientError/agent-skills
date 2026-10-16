@@ -3,7 +3,7 @@
     Links skill directories from this repo into the global Copilot skills path
     using NTFS junctions (Windows).
 .DESCRIPTION
-    Discovers directories containing SKILL.md in the repo root and creates
+    Discovers directories containing SKILL.md under skills/ and creates
     junctions at ~/.copilot/skills/<name> pointing to each one.
     Existing junctions are re-created; real directories are skipped with a warning.
 #>
@@ -15,6 +15,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot  = Split-Path -Parent $PSCommandPath
+$skillsRoot = Join-Path $repoRoot 'skills'
 $skillsDest = Join-Path $env:USERPROFILE '.copilot' 'skills'
 
 if (-not (Test-Path $skillsDest)) {
@@ -30,11 +31,11 @@ $editorSkills = @(
 
 $editorLinked = $false
 
-$skills = Get-ChildItem -Path $repoRoot -Directory |
+$skills = Get-ChildItem -Path $skillsRoot -Directory |
     Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
 
 if ($skills.Count -eq 0) {
-    Write-Warning "No skill directories (containing SKILL.md) found in $repoRoot"
+    Write-Warning "No skill directories (containing SKILL.md) found in $skillsRoot"
     exit 0
 }
 

@@ -3,7 +3,7 @@
 # Links skill directories from this repo into the global Copilot skills path
 # using symlinks (Linux/macOS).
 #
-# Discovers directories containing SKILL.md in the repo root and creates
+# Discovers directories containing SKILL.md under skills/ and creates
 # symlinks at ~/.copilot/skills/<name> pointing to each one.
 # Existing symlinks are re-created; real directories are skipped with a warning.
 #
@@ -15,6 +15,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_ROOT="$REPO_ROOT/skills"
 SKILLS_DEST="$HOME/.copilot/skills"
 
 mkdir -p "$SKILLS_DEST"
@@ -54,7 +55,7 @@ get_editor_binary() {
 }
 
 found=0
-for dir in "$REPO_ROOT"/*/; do
+for dir in "$SKILLS_ROOT"/*/; do
     [[ -f "$dir/SKILL.md" ]] || continue
     found=1
 
@@ -112,5 +113,5 @@ for dir in "$REPO_ROOT"/*/; do
 done
 
 if [[ $found -eq 0 ]]; then
-    echo "WARNING: No skill directories (containing SKILL.md) found in $REPO_ROOT" >&2
+    echo "WARNING: No skill directories (containing SKILL.md) found in $SKILLS_ROOT" >&2
 fi

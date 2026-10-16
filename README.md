@@ -10,6 +10,9 @@ npx skills add TransientError/agent-skills
 
 ## Skills
 
+Skills live in `skills/<name>/`, with a `SKILL.md` file in each directory.
+The install command above discovers skills in this layout.
+
 ### afk
 
 Set ground rules for running Copilot on autopilot while the user is away. Constrains the agent to safe operations within an explicit scope before entering autonomous mode.
