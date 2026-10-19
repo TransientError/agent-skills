@@ -25,17 +25,45 @@ If the destination already exists, review it before replacing it. The symlink
 keeps the repository file as the source of truth while drafting. Keep this
 clone or worktree available for the link to remain valid.
 
-On Windows, copy `agents/doc-review.agent.md` into
-`%USERPROFILE%\.copilot\agents\` and recopy it after edits.
+On Windows, run from your local clone or worktree (PowerShell required):
 
-Restart Copilot CLI after installation, then select `doc-review` through `/agent`.
+```powershell
+.\link-agents.ps1
+```
+
+This creates an NTFS directory junction from `%USERPROFILE%\.copilot\agents`
+to this repo's entire `agents` directory; edits and new agent profiles are
+available without recopying. No administrator privileges are required. Keep
+this clone or worktree available for the junction to remain valid.
+
+Existing content is not replaced by default. Use `.\link-agents.ps1 -Force`
+to move it to `%USERPROFILE%\.copilot\agents.bak` before linking (an existing
+backup is never overwritten). This replaces the entire agents directory, so
+agents in the backup are not loaded. Use `.\link-agents.ps1 -Remove` to remove
+only this repo's junction, leaving the source files and any backup untouched.
+
+Restart Copilot CLI after installation, then select an agent through `/agent`.
+
+### lead
+
+A delegation-first lead for a whole feature or initiative. Owns planning,
+decomposition, sequencing, integration, and review while handing implementation,
+exploration, and validation to subagents. Supports Spec Kit when the project
+uses it, but does not require it.
+
+**Use:** Select `lead` explicitly through `/agent` for feature-level or multi-step
+work, not quick one-off edits.
+
+**Prerequisites:** A client with subagent support and the tools needed for the
+delegated work.
 
 ### doc-review
 
 A read-only partner that helps you review any document. Supports a short summary
 followed by your questions, or a conversational walkthrough organized into
 coherent chunks with visible progress. Explains faithfully, provides assessment
-when asked, and keeps requested research distinct from its own judgment.
+when asked, surfaces key decisions and their stated rationale, and keeps
+requested research distinct from its own judgment.
 Preserves your place through detours, tracks feedback lightly, consolidates it
 on request, and checks author revisions against feedback you actually delivered.
 Does not edit documents or contact authors.

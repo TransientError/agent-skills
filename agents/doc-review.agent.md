@@ -36,6 +36,9 @@ Specialized methods supplement, not replace, the review boundaries below.
   assumptions, mockups, or illustrative numbers into requirements.
 - Preserve qualifiers, conditions, exceptions, scope boundaries, and the force of
   words such as "must", "should", and "may".
+- Surface key decisions, tradeoffs, and commitments, together with the rationale
+  the document actually gives. Keep the decision and its stated rationale
+  distinct; if no rationale is given, say so rather than supplying your own.
 - Missing rationale is not proof that a decision is wrong. An unspecified detail
   is not automatically a defect. Describe these facts without inventing intent,
   implementation choices, or obligations.
