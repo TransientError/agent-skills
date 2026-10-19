@@ -59,30 +59,49 @@ delegated work.
 
 ### doc-review
 
-A read-only partner that helps you review any document. Supports a short summary
-followed by your questions, or a conversational walkthrough organized into
+A document-reading partner that helps you review any document. Supports a short
+summary followed by your questions, or a conversational walkthrough organized into
 coherent chunks with visible progress. Explains faithfully, provides assessment
 when asked, surfaces key decisions and their stated rationale, and keeps
 requested research distinct from its own judgment.
 Preserves your place through detours, tracks feedback lightly, consolidates it
 on request, and checks author revisions against feedback you actually delivered.
-Does not edit documents or contact authors.
+When reviewing a document in an ADO PR, drafts comment wording from collected
+feedback for your approval and can post the approved comments, tracking pending
+and posted items. Does not edit documents or contact authors outside those
+requested PR comments.
 
 **Use:** Select `doc-review` and ask to review a document, or ask Copilot to use the
 `doc-review` agent.
+
+**Prerequisites:** Read access to the document. Optional ADO posting requires
+an authenticated MCP server named `ado` exposing PR metadata, document revision,
+and thread read/write operations, plus comment permissions. Adjust the profile's
+`ado/*` tool allowlist if your server has a different name. Commenting authority
+is limited by behavioral instructions, not a read-only MCP permission boundary.
 
 ### code-walkthrough
 
 A reading partner for large or generated code changes, distinct from Copilot's
 built-in autonomous `code-review` agent. Turns a diff into a numbered,
 dependency-aware reading route, points to files and symbols in your existing
-viewer, and explains one chunk at a time. Preserves your place through questions,
-offers assessment when asked, and tracks coverage through to the end.
+viewer, and explains one code-range **chunk** at a time within numbered
+**sections**. Announces section completion after all its chunks are reviewed and
+for ADO PRs announces file completion when all changed hunks in that file are
+covered, even across sections, so you can check it off in ADO. Provides a
+conversation checkpoint when pausing and reconciles progress against the PR
+snapshot on resume. Preserves your place through questions,
+proactively calls out subtle error-handling and exception-flow issues with
+code-grounded failure traces, offers broader assessment when asked, and tracks
+coverage through to the end.
 
 Accepts pasted diffs, `.patch` files, local Git comparisons, and Azure DevOps PRs.
 For ADO, retrieves PR metadata and paginated diffs through configured MCP read
 tools, keeping the comparison and surrounding code tied to the reviewed snapshot.
-Does not edit code, run tests, post comments, approve PRs, or control the diff
+Collects feedback during the walkthrough, drafts ADO PR comment wording for your
+approval, and can post the approved comments, tracking posted and pending items
+across pauses.
+Does not edit code, run tests, approve PRs, resolve threads, or control the diff
 display. Neovide integration is not part of this version.
 
 **Use:** Select `code-walkthrough` through `/agent`, then ask "Walk me through this
@@ -90,9 +109,11 @@ patch" or "Guide me through this ADO PR" with the patch path or PR URL.
 
 **Prerequisites:** Read access to the diff. Local Git comparisons require Git;
 ADO retrieval requires an authenticated ADO MCP connection exposing PR metadata
-and diff read operations. An exported patch works without ADO access. The profile
-inherits available tools to support different MCP installations; its read-only
-boundaries are behavioral instructions, not a tool-level permission sandbox.
+and diff read operations; posting also requires PR thread read/write tools and
+comment permissions. An exported patch works without ADO access. The profile
+inherits available tools to support different MCP installations; its repository
+read-only and user-authorized commenting boundaries are behavioral instructions,
+not a tool-level permission sandbox.
 
 ## Skills
 
