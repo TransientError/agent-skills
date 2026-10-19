@@ -71,6 +71,29 @@ Does not edit documents or contact authors.
 **Use:** Select `doc-review` and ask to review a document, or ask Copilot to use the
 `doc-review` agent.
 
+### code-walkthrough
+
+A reading partner for large or generated code changes, distinct from Copilot's
+built-in autonomous `code-review` agent. Turns a diff into a numbered,
+dependency-aware reading route, points to files and symbols in your existing
+viewer, and explains one chunk at a time. Preserves your place through questions,
+offers assessment when asked, and tracks coverage through to the end.
+
+Accepts pasted diffs, `.patch` files, local Git comparisons, and Azure DevOps PRs.
+For ADO, retrieves PR metadata and paginated diffs through configured MCP read
+tools, keeping the comparison and surrounding code tied to the reviewed snapshot.
+Does not edit code, run tests, post comments, approve PRs, or control the diff
+display. Neovide integration is not part of this version.
+
+**Use:** Select `code-walkthrough` through `/agent`, then ask "Walk me through this
+patch" or "Guide me through this ADO PR" with the patch path or PR URL.
+
+**Prerequisites:** Read access to the diff. Local Git comparisons require Git;
+ADO retrieval requires an authenticated ADO MCP connection exposing PR metadata
+and diff read operations. An exported patch works without ADO access. The profile
+inherits available tools to support different MCP installations; its read-only
+boundaries are behavioral instructions, not a tool-level permission sandbox.
+
 ## Skills
 
 Skills live in `skills/<name>/`, with a `SKILL.md` file in each directory.
