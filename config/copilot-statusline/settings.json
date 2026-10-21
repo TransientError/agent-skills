@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "lines": [
+    [
+      {
+        "id": "relay",
+        "type": "custom-command",
+        "commandPath": "node -e \"const p=require('node:path'),r=require('node:child_process').spawnSync(process.execPath,[p.join(process.env.COPILOT_HOME||p.join(require('node:os').homedir(),'.copilot'),'extensions/agent-relay/bin/agent-relay-statusline.mjs')],{stdio:'inherit'});if(r.error)throw r.error;process.exit(r.status??1)\"",
+        "timeout": 1000,
+        "preserveColors": false
+      },
+      {
+        "id": "branch",
+        "type": "git-branch",
+        "metadata": { "hideNoGit": "true" }
+      },
+      {
+        "id": "worktree",
+        "type": "git-worktree",
+        "metadata": { "hideNoGit": "true" }
+      },
+      {
+        "id": "changes",
+        "type": "git-changes",
+        "metadata": { "hideNoGit": "true" }
+      },
+      {
+        "id": "status",
+        "type": "git-status",
+        "metadata": { "hideNoGit": "true" }
+      },
+      {
+        "id": "ahead-behind",
+        "type": "git-ahead-behind",
+        "metadata": { "hideNoGit": "true" }
+      },
+      {
+        "id": "context",
+        "type": "context-percentage"
+      }
+    ]
+  ],
+  "colorLevel": 3,
+  "defaultPadding": " ",
+  "powerline": {
+    "enabled": true,
+    "theme": "nord",
+    "separators": ["\ue0b0"],
+    "separatorInvertBackground": [false],
+    "startCaps": [],
+    "endCaps": ["\ue0b0"],
+    "autoAlign": false,
+    "continueThemeAcrossLines": false
+  }
+}

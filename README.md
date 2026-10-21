@@ -11,6 +11,70 @@ npx skills add TransientError/agent-skills
 
 This installs skills. Custom agents are installed separately; see [Agents](#agents).
 
+## Copilot statusline preset
+
+The portable preset in `config/copilot-statusline/settings.json` uses
+[copilot-statusline](https://github.com/EncodeTS/copilot-statusline) with Nord
+Powerline colors. Shows Agent Relay alias, Git branch, worktree, line changes,
+Git status, ahead/behind, and context usage. Git widgets hide outside repositories;
+AI credits are omitted to avoid duplicating the built-in footer.
+
+**Prerequisites:** Copilot CLI with custom statusline support and experimental
+mode enabled, Node.js 22.5+, Bun (`bunx`, preferred) or npm (`npx`), and
+[Agent Relay](https://github.com/joniba/agent-relay) already installed.
+Your terminal font must support Powerline separators and the widget icons.
+
+Install Agent Relay first using its upstream installer (same command in Bash
+and PowerShell; Bun preferred):
+
+```sh
+bunx --yes github:joniba/agent-relay --no-statusline
+```
+
+With npm instead, use `npx --yes github:joniba/agent-relay --no-statusline`.
+
+`--no-statusline` preserves your existing statusline configuration; this repo's
+installer wires Relay's alias into the Powerline preset instead. Use that option
+when upgrading Relay with the same command, too. If using `COPILOT_HOME`, set it
+consistently for Relay installation, preset installation, and Copilot launches.
+Relay is not bundled or installed automatically by this repo.
+
+Enable experimental mode persistently inside Copilot with
+`/settings experimental on`, or launch with `copilot --experimental`. Restart
+Copilot after installing Relay so its extension loads.
+
+From a clone or worktree on Linux/macOS:
+
+```bash
+bash ./install-statusline.sh
+```
+
+On Windows (PowerShell 7; also works on Linux/macOS):
+
+```powershell
+pwsh -NoProfile -File ./install-statusline.ps1
+```
+
+Preview file changes with Bash `--dry-run` or PowerShell `-DryRun`. Both entry
+points link `~/.config/copilot-statusline`
+to this repo's `config/copilot-statusline` directory: a directory symlink on
+Linux/macOS or an NTFS junction on Windows (no administrator privileges needed).
+Existing destinations are refused unless Bash `--force` or PowerShell `-Force`
+is supplied; these move the entire old destination to a unique sibling `.bak`
+path first. The installer also merges
+`statusLine` plus `footer.showCustom` into `~/.copilot/settings.json`, respecting
+`COPILOT_HOME` for the latter. Other Copilot settings are preserved; changed
+existing Copilot settings get unique `.bak` copies beside them. Reinstalling an
+existing link is safe; preset edits through the linked path change the repo file.
+
+The renderer is pinned to `copilot-statusline@0.1.24` and fetched on first use.
+Bash uses Node only to safely merge JSON; PowerShell uses its native JSON tools.
+No Relay installation, permissions, or experimental-mode settings are changed.
+Restart Copilot if the row does not appear. Keep the clone/worktree available
+for the link to remain valid. To undo, remove only the symlink/junction (not its
+contents) and restore the printed backup paths; for a fresh setup, also remove
+the added `statusLine` and `footer.showCustom` keys.
+
 ## Agents
 
 Agent profiles live in `agents/`. To install `doc-review` for all projects on
