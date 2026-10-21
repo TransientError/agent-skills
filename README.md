@@ -299,13 +299,20 @@ Adversarial review of AI-generated tests. Checks for adequate coverage, trivial/
 
 Launch independent interactive Copilot CLI peers in Windows Terminal or Kitty
 tabs and hand off self-contained tasks through Agent Relay. Keeps normal
-permission prompts and existing worktrees; no fixed team roles or headless pool.
+permission prompts by default and existing worktrees; no fixed team roles or
+headless pool. Explicitly requested YOLO launches are supported with `-Yolo`
+(PowerShell) or `--yolo` (Bash), granting all permissions to that child only.
 Kitty reuses a listening instance or starts one automatically on Linux/macOS.
 Existing Kitty tabs preserve focus; a new Kitty window or Windows Terminal tab
 may take focus.
+Also closes explicitly selected Windows Terminal peer tabs through UI Automation,
+with exact-title/unique-match checks, optional inspected runtime-ID guard, a dry
+run, and verified tab removal. Closing is Windows-only and does not kill processes
+first or accept confirmation dialogs automatically.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
-or delegate to a separately accessible conversation.
+"close a session", "close a worker tab", or delegate to a separately accessible
+conversation.
 
 **Prerequisites:** Copilot CLI with experimental extensions and
 [Agent Relay](https://github.com/joniba/agent-relay) installed on the same machine.
@@ -315,6 +322,8 @@ and Bash 4.2+. The Bash helper discovers sockets matching
 is needed. PowerShell 7 can also target Kitty with an explicit socket.
 Agent Relay requires Node.js 22.5+.
 Remote session access additionally depends on Copilot account policy.
+Closing requires the same interactive Windows desktop and English Windows Terminal
+`Close Tab` controls; it needs no Python or additional packages.
 WezTerm, iTerm2, tmux, and headless hosting are not supported by this skill.
 
 ### worktree-cleanup

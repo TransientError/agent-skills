@@ -8,6 +8,7 @@ name=''
 model=''
 address="${KITTY_LISTEN_ON:-}"
 dry_run=false
+yolo=false
 while (($#)); do
     case "$1" in
         --working-directory|--name|--model|--kitty-address)
@@ -21,8 +22,9 @@ while (($#)); do
             esac
             shift 2 ;;
         --dry-run) dry_run=true; shift ;;
+        --yolo) yolo=true; shift ;;
         --help)
-            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR --name NAME [--model MODEL] [--kitty-address SOCKET] [--dry-run]'
+            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR --name NAME [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
             exit 0 ;;
         *) fail "Unknown argument: $1" ;;
     esac
@@ -96,6 +98,7 @@ done
 command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental --remote
     --name "$name" --session-id "$session_id")
 if [[ -n "$model" ]]; then command+=(--model "$model"); fi
+if [[ "$yolo" == true ]]; then command+=(--yolo); fi
 
 status=planned
 handle=''

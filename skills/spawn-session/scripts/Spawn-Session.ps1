@@ -6,6 +6,7 @@ param(
     [ValidateSet('windows-terminal', 'kitty')][string]$Terminal,
     [string]$WindowId = '0',
     [string]$KittyAddress,
+    [switch]$Yolo,
     [switch]$DryRun
 )
 
@@ -35,6 +36,7 @@ try {
         '--session-id', $sessionId
     )
     if ($PSBoundParameters.ContainsKey('Model')) { $childArgs += @('--model', $Model) }
+    if ($Yolo) { $childArgs += '--yolo' }
     $childEnv = [ordered]@{}
     foreach ($key in @(
         'COPILOT_HOME', 'AGENT_RELAY_DB', 'AGENT_RELAY_DATA_DIR',
