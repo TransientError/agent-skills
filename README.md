@@ -236,7 +236,9 @@ Adversarial review of AI-generated tests. Checks for adequate coverage, trivial/
 Launch independent interactive Copilot CLI peers in Windows Terminal or Kitty
 tabs and hand off self-contained tasks through Agent Relay. Keeps normal
 permission prompts and existing worktrees; no fixed team roles or headless pool.
-Kitty preserves focus; Windows Terminal may select the new tab.
+Kitty reuses a listening instance or starts one automatically on Linux/macOS.
+Existing Kitty tabs preserve focus; a new Kitty window or Windows Terminal tab
+may take focus.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 or delegate to a separately accessible conversation.
@@ -244,7 +246,9 @@ or delegate to a separately accessible conversation.
 **Prerequisites:** Copilot CLI with experimental extensions and
 [Agent Relay](https://github.com/joniba/agent-relay) installed on the same machine.
 Windows requires Windows Terminal and PowerShell 7; Linux/macOS requires Kitty
-with an accessible remote-control socket and Bash 4.2+ (or PowerShell 7).
+and Bash 4.2+. The Bash helper discovers sockets matching
+`spawn-session-kitty-<uid>-*.sock` or starts a listener; no manual socket setup
+is needed. PowerShell 7 can also target Kitty with an explicit socket.
 Agent Relay requires Node.js 22.5+.
 Remote session access additionally depends on Copilot account policy.
 WezTerm, iTerm2, tmux, and headless hosting are not supported by this skill.

@@ -12,20 +12,20 @@ description: >
 Create a normal interactive peer session, not a headless worker or a prescribed
 agent team. Keep the user's existing tabs, permissions, and worktrees.
 
-Draft status: Windows launch-plan checks cover argument handling.
-Kitty launch/focus/socket behavior still needs a live trial on the Linux host;
-do not present mocked checks as end-to-end terminal validation.
-
 ## Scope and prerequisites
 
 - Windows: Windows Terminal (`wt`), PowerShell 7 (`pwsh`), and Copilot on PATH.
-- Linux/macOS: Kitty (`kitten`), Bash 4.2+, and Copilot on PATH.
+- Linux/macOS: Kitty (`kitty` and `kitten`), Bash 4.2+, and Copilot on PATH.
 - Node.js 22.5+ (Agent Relay's existing runtime requirement).
 - Agent Relay installed in the child's Copilot home. Do not install it, change
   terminal settings, or grant permissions implicitly.
-- Kitty launch from an agent's captured shell requires an accessible remote-control
-  socket: `KITTY_LISTEN_ON` or an explicit `KittyAddress`. The socket must already
-  permit launch commands. Do not expose an unauthenticated TCP control endpoint.
+- The Bash helper uses an explicit `--kitty-address` or `KITTY_LISTEN_ON` first.
+  Otherwise it probes Unix sockets matching `spawn-session-kitty-<uid>-*.sock`
+  in `$XDG_RUNTIME_DIR` (falling back to `$TMPDIR`, then `/tmp`). It reuses the
+  first responsive instance, or starts a separate Kitty with a matching socket.
+  After launching the peer, it closes only that new instance's initial shell tab.
+  No existing Kitty configuration is changed and no TCP listener is opened.
+  Explicit addresses must already permit launch commands.
 - These are same-machine peers. Remote control gives the user access through
   Copilot; it does not connect Relay meshes on different machines.
 
@@ -45,8 +45,8 @@ do not present mocked checks as end-to-end terminal validation.
 3. Run the bundled helper, first with `DryRun` if reviewing launch arguments.
    Resolve the helper path relative to this skill, not the current repository.
    Choose Windows Terminal on Windows or Kitty on Linux/macOS. If neither applies,
-   stop and explain; WezTerm, iTerm2, tmux, standalone windows, and headless hosting
-   are outside this version.
+   stop and explain; WezTerm, iTerm2, tmux, and headless hosting are outside this
+   version. The Bash helper starts a new Kitty window if no listener is found.
 4. Retain the JSON result: session ID, Relay/session name, directory, terminal
    handle (when provided), and focus behavior. `status: launched` means only that
    the terminal accepted the command, not that Copilot or Relay is ready.
@@ -87,13 +87,19 @@ Optional inputs:
 - `WindowId` (PowerShell): Windows Terminal target; default `0` means the
   most recently used window, not necessarily the caller's. Supply a known window
   name/ID to remove that ambiguity. A nonexistent target may create a window.
-- `KittyAddress` / `--kitty-address`: override `KITTY_LISTEN_ON`.
+- `KittyAddress` / `--kitty-address`: override `KITTY_LISTEN_ON`. With neither set,
+  Bash discovers or starts Kitty automatically; PowerShell still requires an address.
 - `DryRun` / `--dry-run`: return the command plan without launching or requiring
   installed terminal executables/Relay. The working directory must still exist;
   Bash uses the already-required Node.js runtime for UUID/JSON generation.
+  Without an address, its dry run plans a new listener without probing or starting
+  Kitty; `kitty_start_command` records that command.
 
 Windows opens a tab and may take focus; do not promise a no-focus launch.
-Kitty uses `--keep-focus`. The helpers copy only Copilot/Relay configuration
+Kitty tab launches use `--keep-focus`; starting a new Kitty window may take focus.
+The Bash JSON result includes `kitty_address`, `kitty_started`, and
+`kitty_start_command` so later launches can target the same instance explicitly.
+The helpers copy only Copilot/Relay configuration
 environment overrides needed to select the same local mesh. No task text is
 embedded in a shell command: deliver it through Relay after registration.
 
@@ -107,6 +113,8 @@ embedded in a shell command: deliver it through Relay after registration.
   not as a guaranteed attachment to an already running process.
 - Closing the child Copilot stops its Relay participation. Closing its terminal
   may terminate the worker. Do not close it automatically at parent turn/session end.
+- An automatically started Kitty stays open for the user and can host later peers.
+  Closing it stops its listener and may terminate all peers in its tabs.
 - Do not introduce `--yolo`, autopilot, global approvals, trust changes, or an
   approval proxy. Relay messages cannot approve native permission prompts.
 - Relaunching in a directory is not resuming its old conversation. Later work on
