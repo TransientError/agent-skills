@@ -38,12 +38,15 @@ permissions unless the user explicitly requests YOLO for the child.
 ## Workflow
 
 1. Establish the task and existing working directory. Honor an explicit name;
-   otherwise use a short, easy-to-reference task label when one fits, such as
-   `pr1` or `pr2` for stacked diffs or PRs. If the task has no natural short label,
-   fall back to a default-style short name such as `finn` or `mila` instead of
-   constructing a long descriptive name or hyphenated slug. Use
+   otherwise read `local-instructions.md` beside this `SKILL.md` if it exists and
+   apply its naming preferences. Resolve it relative to the skill, not the working
+   directory. Without local preferences, use a short, easy-to-reference task label
+   when one fits, such as `pr1` or `pr2` for stacked diffs or PRs. If the task has no
+   natural short label, fall back to a default-style short name such as `finn` or
+   `mila` instead of constructing a long descriptive name or hyphenated slug. Use
    `list_relay_agents` to avoid an active name collision; choose another short
-   name or compact numbered label. Do not silently reuse an existing session.
+   name or compact numbered label. Names must match `^[a-z0-9][a-z0-9-]{0,62}$`.
+   Do not silently reuse an existing session.
    Create branches/worktrees only if separately asked.
 2. Honor an explicit model request; otherwise omit the model override and let the
    new session use its configured default. The child does not inherit this
@@ -71,6 +74,21 @@ permissions unless the user explicitly requests YOLO for the child.
 7. Replies arrive automatically as new turns. Do not poll for replies or start an
    acknowledgment loop. If brief delivery fails, report that separately from
    launch success and keep the child available.
+
+## Machine-local naming preferences
+
+Optionally copy `local-instructions.example.md` beside this skill to
+`local-instructions.md` and describe how the AI should invent names. This is prose,
+not a wordlist; each machine can use different themes or naming styles. The local
+file is gitignored, and the sample adds no preferences beyond the defaults.
+Leave the local file absent to keep the default behavior.
+
+Use this file only for naming preferences. Explicit user requests take precedence;
+local preferences do not override name validation, collision checks, permissions,
+or lifecycle safeguards. Do not create or edit the local file unless asked.
+These preferences affect peers launched through this skill, not Relay's automatic
+names for ordinary sessions. The launch helpers still require a chosen name; the
+agent reads the instructions, not the scripts.
 
 ## Launch helpers
 

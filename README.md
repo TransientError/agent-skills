@@ -310,6 +310,13 @@ with exact-title/unique-match checks, optional inspected runtime-ID guard, a dry
 run, and verified tab removal. Closing is Windows-only and does not kill processes
 first or accept confirmation dialogs automatically.
 
+**Machine-local naming:** Optionally copy
+`skills/spawn-session/local-instructions.example.md` to `local-instructions.md`
+in the same directory and describe how the AI should invent peer names. The local
+file is gitignored; the sample adds no custom preferences, and leaving the local
+file absent preserves the defaults. This affects this skill's spawned peers, not
+Relay's automatic names for ordinary sessions.
+
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 "close a session", "close a worker tab", or delegate to a separately accessible
 conversation.
