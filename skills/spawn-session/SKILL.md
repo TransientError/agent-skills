@@ -31,9 +31,14 @@ do not present mocked checks as end-to-end terminal validation.
 
 ## Workflow
 
-1. Establish the task, existing working directory, and a short descriptive name.
-   Use `list_relay_agents` to avoid an active name collision. Do not silently
-   reuse an existing session. Create branches/worktrees only if separately asked.
+1. Establish the task and existing working directory. Honor an explicit name;
+   otherwise use a short, easy-to-reference task label when one fits, such as
+   `pr1` or `pr2` for stacked diffs or PRs. If the task has no natural short label,
+   fall back to a default-style short name such as `finn` or `mila` instead of
+   constructing a long descriptive name or hyphenated slug. Use
+   `list_relay_agents` to avoid an active name collision; choose another short
+   name or compact numbered label. Do not silently reuse an existing session.
+   Create branches/worktrees only if separately asked.
 2. Honor an explicit model request; otherwise omit the model override and let the
    new session use its configured default. The child does not inherit this
    conversation, model selection, agent profile, or mode automatically.
@@ -66,12 +71,12 @@ when `pwsh` is preferred on Linux/macOS.
 
 ```powershell
 pwsh -NoProfile -File "<skill-dir>\scripts\Spawn-Session.ps1" `
-    -WorkingDirectory 'D:\work\example\pr-1' -Name 'pr-1'
+    -WorkingDirectory 'D:\work\example\pr-1' -Name 'finn'
 ```
 
 ```bash
 bash "<skill-dir>/scripts/spawn-session.sh" \
-    --working-directory "$PR1_WORKTREE" --name pr-1
+    --working-directory "$PR1_WORKTREE" --name finn
 ```
 
 Optional inputs:
