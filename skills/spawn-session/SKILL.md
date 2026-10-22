@@ -34,7 +34,9 @@ permissions unless the user explicitly requests YOLO for the child.
   No existing Kitty configuration is changed and no TCP listener is opened.
   Explicit addresses must already permit launch commands.
 - These are same-machine peers. Remote control gives the user access through
-  Copilot; it does not connect Relay meshes on different machines.
+  Copilot; it does not connect Relay meshes on different machines. To launch on
+  another host, delegate to an existing session there over a shared Relay mesh,
+  following **Remote-host launches and questions** below.
 
 ## Workflow
 
@@ -68,10 +70,51 @@ permissions unless the user explicitly requests YOLO for the child.
 6. Once registered, send a self-contained task brief with `send_message` addressed
    to the exact session ID. Include scope, relevant paths, constraints, expected
    result, and how/when to report back. Identify this session using the roster;
-   do not hard-code its Relay alias.
+   do not hard-code its Relay alias. For remote-host children, always include the
+   question-routing brief below and the user-facing coordinator's exact session
+   ID, which may differ from the host-local launcher's ID.
 7. Replies arrive automatically as new turns. Do not poll for replies or start an
    acknowledgment loop. If brief delivery fails, report that separately from
    launch success and keep the child available.
+
+## Remote-host launches and questions
+
+Use an existing session on the target host as the launcher; do not assume SSH
+has the same desktop or Entra credential context. Specify an existing host-local
+directory, the user's task and constraints, and the user-facing coordinator's
+exact Relay session ID. The launcher runs this skill locally, launches once,
+checks the exact child ID, and returns the launch record and readiness. Do not
+retry a launch merely because registration or a reply is delayed.
+
+For the explicitly authorized **YOLO remote workflow**, pass `-Yolo` / `--yolo`
+so tool permission prompts do not strand the child in an unattended tab. This
+grants all permissions to that child, not global settings; it does not broaden
+the user's task scope. Obtain explicit user authorization for YOLO if it has not
+already been given for this remote workflow; a remote launch alone is not consent.
+Keep ordinary local launches at normal permissions unless separately authorized.
+Do not restart or change permissions on an existing child just to apply this recipe.
+
+The host-local launcher MUST include this in the initial remote child's task brief,
+substituting the coordinator's exact ID (not an alias or the launcher's ID):
+
+> The user is interacting through coordinator session `<coordinator-session-id>`.
+> Do not open optional interactive question dialogs in this remote tab. Send
+> clarification questions and proposed plans to that exact coordinator via Relay,
+> with a unique request ID, enough context, and numbered choices. For decisions
+> requiring user input, end your turn and await the user's answer relayed by the
+> coordinator with the matching request ID; do not poll or assume approval.
+> The coordinator's own recommendation is not user approval. Submit proposed
+> plans through Relay before implementation rather than entering native plan mode
+> and blocking on its exit dialog. Honor higher-priority instructions requiring
+> native interaction; report those blockers instead of bypassing them.
+
+The coordinator presents the question to the user using its normal question UI
+and returns the actual answer to the child's exact ID with the request ID.
+Never invent a response or auto-approve. A Relay reply cannot dismiss an already
+open native dialog, approve permissions, complete sign-in/MFA, or grant folder
+trust. Report such blockers for the user to handle through supported UI.
+Host-local launch does not guarantee Entra authorization or operation while RDP
+is disconnected. No new service, SSH tunnel, or credential transfer is implied.
 
 ## Automatic and machine-local naming
 

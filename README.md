@@ -310,6 +310,15 @@ with exact-title/unique-match checks, optional inspected runtime-ID guard, a dry
 run, and verified tab removal. Closing is Windows-only and does not kill processes
 first or accept confirmation dialogs automatically.
 
+**Remote-host launches:** An existing session on the target host can run the
+helper locally over a shared Relay mesh and return the child's exact ID.
+The explicitly user-authorized remote workflow uses `-Yolo` / `--yolo` for that
+child only. Its initial brief must route questions and proposed plans through
+Relay to the user-facing coordinator's exact ID, rather than strand optional
+dialogs in a remote tab. The coordinator asks the user and relays the actual
+answer; this cannot answer native dialogs, sign-in/MFA, or folder-trust prompts.
+Local launches retain normal permissions unless separately authorized.
+
 **Machine-local naming:** Optionally copy
 `skills/spawn-session/local-instructions.example.md` to `local-instructions.md`
 in the same directory for local naming notes. Both launch helpers automatically
