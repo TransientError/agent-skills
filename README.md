@@ -316,11 +316,14 @@ in the same directory for local naming notes. Both launch helpers automatically
 choose names from a gitignored `wordlist.local.txt` beside the skill (one name per
 line), or Relay's installed wordlist when no local list exists. They hash the actual
 launch session ID into the list and probe forward with wraparound, skipping active
-names read from Relay's local SQLite registry. No AI name selection or Python is
-needed. Only explicit user-requested names should use `-Name` / `--name`.
-Selection is read-only and best-effort, not an atomic reservation. Automatic naming
-supports plugin-free local Relay; other meshes require an explicit name. Local files
-are not synced by Git, and these preferences do not affect ordinary Relay sessions.
+names from Relay's active roster, including other machines on a PostgreSQL mesh.
+Plugin meshes use the installed Relay transport and credentials; local SQLite
+remains read-only. No AI name selection or Python is needed. Only explicit
+user-requested names should use `-Name` / `--name`. Selection is best-effort, not an
+atomic reservation. Shared-transport initialization can apply schema migrations,
+including during dry runs; connection failures stop the launch rather than fall
+back to SQLite. Local files are not synced by Git, and these preferences do not
+affect ordinary Relay sessions.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 "close a session", "close a worker tab", or delegate to a separately accessible
@@ -335,6 +338,9 @@ is needed. PowerShell 7 can also target Kitty with an explicit socket.
 Automatic naming requires Node.js 22.13+ or a newer LTS release for built-in
 read-only SQLite support (Node 23.x requires 23.5+); Relay itself requires 22.5+.
 Remote session access additionally depends on Copilot account policy.
+Automatic naming on plugin meshes also requires Relay's installed plugin-loader
+API and the configured transport's dependencies and authentication (for PostgreSQL,
+the plugin's `.env` and a local Azure login).
 Closing requires the same interactive Windows desktop and English Windows Terminal
 `Close Tab` controls; it needs no Python or additional packages.
 WezTerm, iTerm2, tmux, and headless hosting are not supported by this skill.

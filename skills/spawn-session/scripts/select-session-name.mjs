@@ -14,20 +14,19 @@ try {
       !workingDirectory) {
     throw new Error("Usage: select-session-name.mjs SESSION_ID WORKING_DIRECTORY");
   }
+  process.chdir(workingDirectory);
   const env = process.env;
-  const childPath = (path) => resolve(workingDirectory, path);
+  const childPath = (path) => resolve(path);
   const copilotHome = childPath(env.COPILOT_HOME || join(homedir(), ".copilot"));
   const relayDir = join(copilotHome, "extensions", "agent-relay");
   const pluginDir = childPath(env.AGENT_RELAY_PLUGIN_DIR || join(relayDir, "plugins"));
   const plugins = statSync(pluginDir, { throwIfNoEntry: false })
     ? readdirSync(pluginDir, { withFileTypes: true })
     : [];
-  if (env.AGENT_RELAY_PLUGINS?.split(",").some((path) => path.trim()) ||
+  const hasPlugins = env.AGENT_RELAY_PLUGINS?.split(",").some((path) => path.trim()) ||
       plugins.some((entry) => (entry.isFile() && entry.name.endsWith(".mjs")) ||
         (entry.isDirectory() && statSync(join(pluginDir, entry.name, "package.json"),
-          { throwIfNoEntry: false })))) {
-    throw new Error("Automatic naming supports plugin-free local Relay only; supply an explicit name for plugin-configured meshes");
-  }
+          { throwIfNoEntry: false })));
 
   const localWordlist = join(dirname(fileURLToPath(import.meta.url)), "..", "wordlist.local.txt");
   const hasLocalWordlist = statSync(localWordlist, { throwIfNoEntry: false });
@@ -47,26 +46,56 @@ try {
       ? join(homedir(), "Library", "Application Support", "agent-relay")
       : join(env.XDG_DATA_HOME || join(homedir(), ".local", "share"), "agent-relay");
   const canonicalDb = childPath(join(env.AGENT_RELAY_DATA_DIR || defaultDataDir, "agent-relay.db"));
-  const dbPath = env.AGENT_RELAY_DB
-    ? childPath(env.AGENT_RELAY_DB)
-    : statSync(canonicalDb, { throwIfNoEntry: false })
-      ? canonicalDb
-      : join(relayDir, "agent-relay.db");
-  if (!statSync(dbPath, { throwIfNoEntry: false })) {
-    throw new Error(`Relay registry not found: ${dbPath}. Start local Relay first or supply an explicit name`);
+  let active;
+  if (hasPlugins) {
+    const { loadPlugins } = await import(pathToFileURL(join(relayDir, "plugin-loader.mjs")).href);
+    const registry = await loadPlugins({
+      env,
+      dataDir: dirname(canonicalDb),
+      log: (message) => console.error(`spawn-session naming: ${message}`),
+      reservedToolNames: ["list_relay_agents", "send_message"],
+    });
+    if (registry.transport) {
+      const transport = registry.transport.create({
+        log: (message) => console.error(`spawn-session naming: ${message}`),
+      });
+      try {
+        await transport.init({
+          self: { id: sessionId, name: "spawn-session-name-check" },
+          credentials: registry.credentials ?? { get: async () => null },
+        });
+        const agents = await transport.listAgents();
+        if (!Array.isArray(agents) || agents.some((agent) =>
+          !agent || typeof agent.id !== "string" || typeof agent.name !== "string")) {
+          throw new Error("Relay transport returned an invalid roster");
+        }
+        active = new Set(agents.filter((agent) => agent.id !== sessionId).map((agent) => agent.name));
+      } finally {
+        await transport.stop();
+      }
+    }
   }
 
-  const { DatabaseSync } = await import("node:sqlite");
-  const db = new DatabaseSync(dbPath, { readOnly: true });
-  let active;
-  try {
-    db.exec("PRAGMA busy_timeout = 5000");
-    const cutoff = new Date(Date.now() - 30_000).toISOString();
-    active = new Set(db.prepare(
-      "SELECT name FROM agents WHERE last_heartbeat >= ? AND id != ?",
-    ).all(cutoff, sessionId).map((agent) => agent.name));
-  } finally {
-    db.close();
+  if (!active) {
+    const dbPath = env.AGENT_RELAY_DB
+      ? childPath(env.AGENT_RELAY_DB)
+      : statSync(canonicalDb, { throwIfNoEntry: false })
+        ? canonicalDb
+        : join(relayDir, "agent-relay.db");
+    if (!statSync(dbPath, { throwIfNoEntry: false })) {
+      throw new Error(`Relay registry not found: ${dbPath}. Start Relay first or supply an explicit name`);
+    }
+    const { DatabaseSync } = await import("node:sqlite");
+    const db = new DatabaseSync(dbPath, { readOnly: true });
+    try {
+      db.exec("PRAGMA busy_timeout = 5000");
+      const cutoff = new Date(Date.now() - 30_000).toISOString();
+      active = new Set(db.prepare(
+        "SELECT name FROM agents WHERE last_heartbeat >= ? AND id != ?",
+      ).all(cutoff, sessionId).map((agent) => agent.name));
+    } finally {
+      db.close();
+    }
   }
   const start = createHash("sha256").update(sessionId.toLowerCase()).digest().readUInt32BE(0) % names.length;
   let selected;

@@ -87,20 +87,28 @@ When no explicit name is supplied, the helper:
    line, blank lines ignored. Otherwise it loads `WORDS` from the child's installed
    `extensions/agent-relay/identity/wordlist.mjs` under `COPILOT_HOME` or
    `~/.copilot`. Names must be valid and unique; an empty or invalid list is an error.
-2. Reads the local Relay registry once, read-only. It honors `AGENT_RELAY_DB`,
-   otherwise `AGENT_RELAY_DATA_DIR` or Relay's platform-default data directory,
-   with the legacy in-extension database used only when the canonical one is absent.
-   Names with heartbeats within 30 seconds count as active, matching local Relay.
+2. Reads the active Relay roster once. For plugin-configured meshes, it uses the
+   child's installed plugin loader, transport, and credentials (including the
+   PostgreSQL plugin's `.env` and local Azure login). It initializes the transport,
+   lists active peers across machines, and closes the connection without
+   registering a session or running plugin activation hooks. Transport initialization
+   can apply schema migrations, just as starting Relay does; this also applies to
+   dry runs. Connection or plugin failures stop the launch, never fall back to SQLite.
+   Without a plugin transport, it reads local SQLite read-only, honoring
+   `AGENT_RELAY_DB`, otherwise `AGENT_RELAY_DATA_DIR` or Relay's platform-default
+   data directory, with the legacy in-extension database used only when the
+   canonical one is absent. Names with heartbeats within 30 seconds count as active
+   for local SQLite; plugin transports determine their own active roster.
 3. Hashes the generated launch session ID with SHA-256, takes the first unsigned
    32-bit value modulo the list length, and probes forward with wraparound to the
    first unused name. That same session ID and selected name are used for launch.
    This is circular linear probing, not a full consistent-hashing implementation.
 
 An exhausted list, unreadable registry, or invalid wordlist fails before opening a
-tab. There is no silent fallback to an invented name. Automatic naming supports
-plugin-free local Relay only; plugin-configured meshes require an explicit name
-checked against the Relay roster. The read does not reserve a name, so concurrent
-launches can still race. Use session IDs to address peers reliably.
+tab. There is no silent fallback to an invented name. Plugin meshes require the
+installed Relay plugin-loader API and working transport credentials. The roster
+read does not reserve a name, so concurrent launches can still race. Use session
+IDs to address peers reliably.
 
 To enforce different themes or exclusions per machine, customize the gitignored
 `wordlist.local.txt`; it takes effect automatically, without a local instructions
@@ -147,9 +155,9 @@ Optional inputs:
   Bash discovers or starts Kitty automatically; PowerShell still requires an address.
 - `DryRun` / `--dry-run`: return the command plan without launching or requiring
   installed terminal executables. The working directory must still exist.
-  Automatic naming still requires Node.js, a wordlist, and a readable local Relay
-  registry; an explicit name bypasses that lookup. Bash always uses Node.js for
-  UUID/JSON generation.
+  Automatic naming still requires Node.js, a wordlist, and an accessible Relay
+  roster (including authentication for plugin transports); an explicit name bypasses
+  that lookup. Bash always uses Node.js for UUID/JSON generation.
   Without an address, its dry run plans a new listener without probing or starting
   Kitty; `kitty_start_command` records that command.
 
@@ -158,8 +166,11 @@ Kitty tab launches use `--keep-focus`; starting a new Kitty window may take focu
 The Bash JSON result includes `kitty_address`, `kitty_started`, and
 `kitty_start_command` so later launches can target the same instance explicitly.
 The helpers copy only Copilot/Relay configuration
-environment overrides needed to select the same local mesh. No task text is
-embedded in a shell command: deliver it through Relay after registration.
+environment overrides needed to select the same mesh, including PostgreSQL
+connection settings, `AGENT_RELAY_ENV_FILE`, and `AZURE_CONFIG_DIR`. Keep password
+credentials in the plugin's `.env`, not launch arguments or the JSON launch record.
+No task text is embedded in a shell command: deliver it through Relay after
+registration.
 
 ## Access and lifecycle
 

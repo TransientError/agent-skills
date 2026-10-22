@@ -101,7 +101,9 @@ fi
 
 command=(kitten @ --to "$address" launch --type=tab --keep-focus
     --tab-title "$name" --cwd "$directory")
-for key in COPILOT_HOME AGENT_RELAY_DB AGENT_RELAY_DATA_DIR AGENT_RELAY_PLUGINS AGENT_RELAY_PLUGIN_DIR; do
+for key in COPILOT_HOME AGENT_RELAY_DB AGENT_RELAY_DATA_DIR AGENT_RELAY_PLUGINS AGENT_RELAY_PLUGIN_DIR \
+    AGENT_RELAY_ENV_FILE AGENT_RELAY_PG_HOST AGENT_RELAY_PG_USER AGENT_RELAY_PG_DB \
+    AGENT_RELAY_PG_PORT AGENT_RELAY_PG_SSL AGENT_RELAY_AZURE_TENANT AZURE_CONFIG_DIR AGENT_RELAY_HOST; do
     if [[ -v "$key" ]]; then
         command+=(--env "$key=$(printenv "$key")")
     fi
