@@ -29,11 +29,19 @@ try {
           { throwIfNoEntry: false })));
 
   const localWordlist = join(dirname(fileURLToPath(import.meta.url)), "..", "wordlist.local.txt");
-  const hasLocalWordlist = statSync(localWordlist, { throwIfNoEntry: false });
+  const hasLocalWordlist = !env.AGENT_RELAY_WORDLIST_FILE &&
+    statSync(localWordlist, { throwIfNoEntry: false });
   const source = hasLocalWordlist ? localWordlist : join(relayDir, "identity", "wordlist.mjs");
-  const names = hasLocalWordlist
-    ? readFileSync(source, "utf8").split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
-    : (await import(pathToFileURL(source).href)).WORDS;
+  let names;
+  if (hasLocalWordlist) {
+    names = readFileSync(source, "utf8").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  } else {
+    const wordlist = await import(pathToFileURL(source).href);
+    if (env.AGENT_RELAY_WORDLIST_FILE && typeof wordlist.loadWords !== "function") {
+      throw new Error("Installed Relay does not support AGENT_RELAY_WORDLIST_FILE; upgrade Relay first");
+    }
+    names = typeof wordlist.loadWords === "function" ? wordlist.loadWords({ env }) : wordlist.WORDS;
+  }
   if (!Array.isArray(names) || names.length === 0 ||
       names.some((name) => typeof name !== "string" || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(name)) ||
       new Set(names).size !== names.length) {

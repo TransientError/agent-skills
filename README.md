@@ -332,7 +332,11 @@ user-requested names should use `-Name` / `--name`. Selection is best-effort, no
 atomic reservation. Shared-transport initialization can apply schema migrations,
 including during dry runs; connection failures stop the launch rather than fall
 back to SQLite. Local files are not synced by Git, and these preferences do not
-affect ordinary Relay sessions.
+affect ordinary Relay sessions unless the same file is configured there.
+`AGENT_RELAY_WORDLIST_FILE` takes precedence over the skill-local list when the
+installed Relay supports it. Without a skill-local list, the
+[Relay fork](https://github.com/TransientError/agent-relay)'s effective per-user
+wordlist is used when available, with bundled names on older Relay builds.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 "close a session", "close a worker tab", or delegate to a separately accessible

@@ -157,6 +157,45 @@ test("the same session ID does not collide with itself in the shared roster", (t
   assert.equal(result.stdout.trim(), names[start]);
 });
 
+for (const explicit of [false, true]) {
+  test(`uses the fork's ${explicit ? "explicit override ahead of the skill-local list" : "default per-user list without a skill-local list"}`, (t) => {
+    const f = fixture(t);
+    const relay = join(f.env.COPILOT_HOME, "extensions", "agent-relay");
+    mkdirSync(join(relay, "identity"));
+    writeFileSync(join(relay, "identity", "wordlist.mjs"), `
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+export const WORDS = ["bundled"];
+export function loadWords({env}) {
+  return readFileSync(env.AGENT_RELAY_WORDLIST_FILE || join(env.COPILOT_HOME,
+    "agent-relay-wordlist.txt"), "utf8").trim().split("\\n");
+}
+`);
+    if (explicit) {
+      f.env.AGENT_RELAY_WORDLIST_FILE = join(f.directory, "private.txt");
+      writeFileSync(f.env.AGENT_RELAY_WORDLIST_FILE, "private-name\n");
+    } else {
+      rmSync(join(dirname(dirname(f.helper)), "wordlist.local.txt"));
+      writeFileSync(join(f.env.COPILOT_HOME, "agent-relay-wordlist.txt"), "private-name\n");
+    }
+    const result = f.run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), "private-name");
+  });
+}
+
+test("an explicit wordlist fails clearly on older Relay instead of being ignored", (t) => {
+  const f = fixture(t);
+  const identity = join(f.env.COPILOT_HOME, "extensions", "agent-relay", "identity");
+  mkdirSync(identity);
+  writeFileSync(join(identity, "wordlist.mjs"), 'export const WORDS = ["bundled"];');
+  f.env.AGENT_RELAY_WORDLIST_FILE = join(f.directory, "private.txt");
+  const result = f.run();
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /upgrade Relay first/);
+  assert.equal(result.stdout, "");
+});
+
 for (const plugin of [false, true]) {
   test(`local SQLite selection preserves stale/self filtering (${plugin ? "non-transport plugin" : "no plugin"})`, (t) => {
     const f = fixture(t, plugin);
@@ -189,6 +228,7 @@ for (const shell of ["pwsh", "bash"]) {
       AGENT_RELAY_ENV_FILE: join(f.directory, "custom.env"),
       AGENT_RELAY_PG_HOST: "shared.example.invalid",
       AGENT_RELAY_AZURE_TENANT: "fixture-tenant",
+      AGENT_RELAY_WORDLIST_FILE: join(f.directory, "private.txt"),
       AZURE_CONFIG_DIR: join(f.directory, "azure profile"),
       AGENT_RELAY_PG_PASSWORD: "must-not-appear-in-plan",
     });
@@ -203,7 +243,7 @@ for (const shell of ["pwsh", "bash"]) {
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
     for (const key of ["AGENT_RELAY_ENV_FILE", "AGENT_RELAY_PG_HOST",
-      "AGENT_RELAY_AZURE_TENANT", "AZURE_CONFIG_DIR"]) {
+      "AGENT_RELAY_AZURE_TENANT", "AGENT_RELAY_WORDLIST_FILE", "AZURE_CONFIG_DIR"]) {
       assert(plan.command.includes(`${key}=${f.env[key]}`), key);
     }
     assert(!result.stdout.includes(f.env.AGENT_RELAY_PG_PASSWORD));

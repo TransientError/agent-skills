@@ -126,10 +126,13 @@ Both launch helpers share `scripts/select-session-name.mjs`, using Node.js's
 built-in SQLite support rather than Python or an external SQLite package.
 When no explicit name is supplied, the helper:
 
-1. Uses `wordlist.local.txt` beside this skill if present: one lowercase name per
-   line, blank lines ignored. Otherwise it loads `WORDS` from the child's installed
-   `extensions/agent-relay/identity/wordlist.mjs` under `COPILOT_HOME` or
-   `~/.copilot`. Names must be valid and unique; an empty or invalid list is an error.
+1. An explicit `AGENT_RELAY_WORDLIST_FILE` uses the installed Relay's `loadWords`
+   API (upgrade Relay if that API is unavailable). Otherwise it uses
+   `wordlist.local.txt` beside this skill if present: one lowercase name per line,
+   blank lines ignored. Without that file, it loads the child's installed Relay
+   wordlist, calling `loadWords` when supported (including the fork's optional
+   `<COPILOT_HOME>/agent-relay-wordlist.txt`), otherwise using bundled `WORDS`.
+   Names must be valid and unique; an empty or invalid list is an error.
 2. Reads the active Relay roster once. For plugin-configured meshes, it uses the
    child's installed plugin loader, transport, and credentials (including the
    PostgreSQL plugin's `.env` and local Azure login). It initializes the transport,
@@ -210,7 +213,8 @@ The Bash JSON result includes `kitty_address`, `kitty_started`, and
 `kitty_start_command` so later launches can target the same instance explicitly.
 The helpers copy only Copilot/Relay configuration
 environment overrides needed to select the same mesh, including PostgreSQL
-connection settings, `AGENT_RELAY_ENV_FILE`, and `AZURE_CONFIG_DIR`. Keep password
+connection settings, `AGENT_RELAY_ENV_FILE`, `AGENT_RELAY_WORDLIST_FILE`, and
+`AZURE_CONFIG_DIR`. Keep password
 credentials in the plugin's `.env`, not launch arguments or the JSON launch record.
 No task text is embedded in a shell command: deliver it through Relay after
 registration.
@@ -275,5 +279,6 @@ is not implemented; do not run Windows UI Automation or Bash tests through WSL.
 ## References
 
 - [Agent Relay](https://github.com/joniba/agent-relay)
+- [Relay fork with private text wordlists](https://github.com/TransientError/agent-relay)
 - [Windows Terminal commands](https://learn.microsoft.com/windows/terminal/command-line-arguments)
 - [Kitty remote control](https://sw.kovidgoyal.net/kitty/remote-control/)
