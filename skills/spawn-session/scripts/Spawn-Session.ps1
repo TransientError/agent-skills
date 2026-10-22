@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$WorkingDirectory,
-    [Parameter(Mandatory)][ValidatePattern('^[a-z0-9][a-z0-9-]{0,62}$')][string]$Name,
+    [ValidatePattern('^[a-z0-9][a-z0-9-]{0,62}$')][string]$Name,
     [string]$Model,
     [ValidateSet('windows-terminal', 'kitty')][string]$Terminal,
     [string]$WindowId = '0',
@@ -12,7 +12,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 try {
-    if ($Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
+    if ($PSBoundParameters.ContainsKey('Name') -and
+        $Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
         throw 'Name must be 1-63 lowercase letters, digits, or hyphens'
     }
     $directory = (Get-Item -LiteralPath $WorkingDirectory).FullName
@@ -31,6 +32,19 @@ try {
         throw 'Windows Terminal is only supported on Windows'
     }
     $sessionId = [guid]::NewGuid().ToString()
+    if (-not $PSBoundParameters.ContainsKey('Name')) {
+        $null = Get-Command node -CommandType Application -ErrorAction Stop
+        $nameOutput = & node --disable-warning=ExperimentalWarning (
+            Join-Path $PSScriptRoot 'select-session-name.mjs'
+        ) $sessionId $directory
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Automatic naming failed; see the naming diagnostic above. No session was launched'
+        }
+        $Name = ($nameOutput -join "`n").Trim()
+        if ($Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
+            throw 'Automatic naming returned an invalid name; no session was launched'
+        }
+    }
     $childArgs = @(
         '--experimental', '--remote', '--name', $Name,
         '--session-id', $sessionId

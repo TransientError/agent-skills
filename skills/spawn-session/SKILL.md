@@ -22,7 +22,8 @@ permissions unless the user explicitly requests YOLO for the child.
   interactive Windows desktop. The helper expects English `Close Tab` controls;
   unsupported UI layouts/localizations fail explicitly. No Python is required.
 - Linux/macOS: Kitty (`kitty` and `kitten`), Bash 4.2+, and Copilot on PATH.
-- Node.js 22.5+ (Agent Relay's existing runtime requirement).
+- Node.js 22.13+ or a newer LTS release for automatic naming's read-only SQLite
+  support (Node 23.x requires 23.5+). Agent Relay itself requires Node.js 22.5+.
 - Agent Relay installed in the child's Copilot home. Do not install it, change
   terminal settings, or grant permissions implicitly.
 - The Bash helper uses an explicit `--kitty-address` or `KITTY_LISTEN_ON` first.
@@ -37,16 +38,13 @@ permissions unless the user explicitly requests YOLO for the child.
 
 ## Workflow
 
-1. Establish the task and existing working directory. Honor an explicit name;
-   otherwise read `local-instructions.md` beside this `SKILL.md` if it exists and
-   apply its naming preferences. Resolve it relative to the skill, not the working
-   directory. Without local preferences, use a short, easy-to-reference task label
-   when one fits, such as `pr1` or `pr2` for stacked diffs or PRs. If the task has no
-   natural short label, fall back to a default-style short name such as `finn` or
-   `mila` instead of constructing a long descriptive name or hyphenated slug. Use
-   `list_relay_agents` to avoid an active name collision; choose another short
-   name or compact numbered label. Names must match `^[a-z0-9][a-z0-9-]{0,62}$`.
-   Do not silently reuse an existing session.
+1. Establish the task and existing working directory. Read `local-instructions.md`
+   beside this `SKILL.md` if it exists, resolving it relative to the skill, not the
+   working directory. Pass `Name` / `--name` only for an explicitly user-requested
+   name; otherwise omit it and let the helper choose automatically. Do not invent
+   task labels or names and pass them as explicit overrides. For an explicit name,
+   check `list_relay_agents`; if it is already in use, ask rather than silently
+   reusing it. Names must match `^[a-z0-9][a-z0-9-]{0,62}$`.
    Create branches/worktrees only if separately asked.
 2. Honor an explicit model request; otherwise omit the model override and let the
    new session use its configured default. The child does not inherit this
@@ -75,20 +73,46 @@ permissions unless the user explicitly requests YOLO for the child.
    acknowledgment loop. If brief delivery fails, report that separately from
    launch success and keep the child available.
 
-## Machine-local naming preferences
+## Automatic and machine-local naming
 
 Optionally copy `local-instructions.example.md` beside this skill to
-`local-instructions.md` and describe how the AI should invent names. This is prose,
-not a wordlist; each machine can use different themes or naming styles. The local
-file is gitignored, and the sample adds no preferences beyond the defaults.
-Leave the local file absent to keep the default behavior.
+`local-instructions.md` for machine-local naming notes. The file is gitignored;
+the sample adds no preferences. The scripts do not interpret prose.
 
-Use this file only for naming preferences. Explicit user requests take precedence;
-local preferences do not override name validation, collision checks, permissions,
-or lifecycle safeguards. Do not create or edit the local file unless asked.
+Both launch helpers share `scripts/select-session-name.mjs`, using Node.js's
+built-in SQLite support rather than Python or an external SQLite package.
+When no explicit name is supplied, the helper:
+
+1. Uses `wordlist.local.txt` beside this skill if present: one lowercase name per
+   line, blank lines ignored. Otherwise it loads `WORDS` from the child's installed
+   `extensions/agent-relay/identity/wordlist.mjs` under `COPILOT_HOME` or
+   `~/.copilot`. Names must be valid and unique; an empty or invalid list is an error.
+2. Reads the local Relay registry once, read-only. It honors `AGENT_RELAY_DB`,
+   otherwise `AGENT_RELAY_DATA_DIR` or Relay's platform-default data directory,
+   with the legacy in-extension database used only when the canonical one is absent.
+   Names with heartbeats within 30 seconds count as active, matching local Relay.
+3. Hashes the generated launch session ID with SHA-256, takes the first unsigned
+   32-bit value modulo the list length, and probes forward with wraparound to the
+   first unused name. That same session ID and selected name are used for launch.
+   This is circular linear probing, not a full consistent-hashing implementation.
+
+An exhausted list, unreadable registry, or invalid wordlist fails before opening a
+tab. There is no silent fallback to an invented name. Automatic naming supports
+plugin-free local Relay only; plugin-configured meshes require an explicit name
+checked against the Relay roster. The read does not reserve a name, so concurrent
+launches can still race. Use session IDs to address peers reliably.
+
+To enforce different themes or exclusions per machine, customize the gitignored
+`wordlist.local.txt`; it takes effect automatically, without a local instructions
+file. Do not modify Relay's own wordlist. Editing a list can change the hash mapping
+for future sessions; existing sessions keep their names.
+
+Use local naming notes only for naming preferences. Explicit user requests take
+precedence; local preferences do not override name validation, collision checks,
+permissions, or lifecycle safeguards. Do not create or edit either local file unless asked.
 These preferences affect peers launched through this skill, not Relay's automatic
-names for ordinary sessions. The launch helpers still require a chosen name; the
-agent reads the instructions, not the scripts.
+names for ordinary sessions. An explicit user-requested name bypasses automatic
+wordlist selection; local naming notes are not permission to bypass it.
 
 ## Launch helpers
 
@@ -98,16 +122,18 @@ when `pwsh` is preferred on Linux/macOS.
 
 ```powershell
 pwsh -NoProfile -File "<skill-dir>\scripts\Spawn-Session.ps1" `
-    -WorkingDirectory 'D:\work\example\pr-1' -Name 'finn'
+    -WorkingDirectory 'D:\work\example\pr-1'
 ```
 
 ```bash
 bash "<skill-dir>/scripts/spawn-session.sh" \
-    --working-directory "$PR1_WORKTREE" --name finn
+    --working-directory "$PR1_WORKTREE"
 ```
 
 Optional inputs:
 
+- `Name` / `--name`: exact name, only when explicitly requested by the user.
+  Omit for automatic selection from the wordlist and local registry.
 - `Model` / `--model`: exact Copilot model ID, only when requested.
 - `Yolo` / `--yolo`: pass Copilot's `--yolo` flag to the child, enabling all
   permissions (tools, paths, and URLs). Use only on explicit user request;
@@ -120,8 +146,10 @@ Optional inputs:
 - `KittyAddress` / `--kitty-address`: override `KITTY_LISTEN_ON`. With neither set,
   Bash discovers or starts Kitty automatically; PowerShell still requires an address.
 - `DryRun` / `--dry-run`: return the command plan without launching or requiring
-  installed terminal executables/Relay. The working directory must still exist;
-  Bash uses the already-required Node.js runtime for UUID/JSON generation.
+  installed terminal executables. The working directory must still exist.
+  Automatic naming still requires Node.js, a wordlist, and a readable local Relay
+  registry; an explicit name bypasses that lookup. Bash always uses Node.js for
+  UUID/JSON generation.
   Without an address, its dry run plans a new listener without probing or starting
   Kitty; `kitty_start_command` records that command.
 

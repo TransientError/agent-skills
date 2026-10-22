@@ -312,10 +312,15 @@ first or accept confirmation dialogs automatically.
 
 **Machine-local naming:** Optionally copy
 `skills/spawn-session/local-instructions.example.md` to `local-instructions.md`
-in the same directory and describe how the AI should invent peer names. The local
-file is gitignored; the sample adds no custom preferences, and leaving the local
-file absent preserves the defaults. This affects this skill's spawned peers, not
-Relay's automatic names for ordinary sessions.
+in the same directory for local naming notes. Both launch helpers automatically
+choose names from a gitignored `wordlist.local.txt` beside the skill (one name per
+line), or Relay's installed wordlist when no local list exists. They hash the actual
+launch session ID into the list and probe forward with wraparound, skipping active
+names read from Relay's local SQLite registry. No AI name selection or Python is
+needed. Only explicit user-requested names should use `-Name` / `--name`.
+Selection is read-only and best-effort, not an atomic reservation. Automatic naming
+supports plugin-free local Relay; other meshes require an explicit name. Local files
+are not synced by Git, and these preferences do not affect ordinary Relay sessions.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 "close a session", "close a worker tab", or delegate to a separately accessible
@@ -327,7 +332,8 @@ Windows requires Windows Terminal and PowerShell 7; Linux/macOS requires Kitty
 and Bash 4.2+. The Bash helper discovers sockets matching
 `spawn-session-kitty-<uid>-*.sock` or starts a listener; no manual socket setup
 is needed. PowerShell 7 can also target Kitty with an explicit socket.
-Agent Relay requires Node.js 22.5+.
+Automatic naming requires Node.js 22.13+ or a newer LTS release for built-in
+read-only SQLite support (Node 23.x requires 23.5+); Relay itself requires 22.5+.
 Remote session access additionally depends on Copilot account policy.
 Closing requires the same interactive Windows desktop and English Windows Terminal
 `Close Tab` controls; it needs no Python or additional packages.

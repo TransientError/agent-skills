@@ -5,6 +5,7 @@ fail() { printf 'spawn-session: %s\n' "$*" >&2; exit 1; }
 
 directory=''
 name=''
+name_set=false
 model=''
 address="${KITTY_LISTEN_ON:-}"
 dry_run=false
@@ -15,7 +16,7 @@ while (($#)); do
             (($# >= 2)) || fail "$1 requires a value"
             case "$1" in
                 --working-directory) directory="$2" ;;
-                --name) name="$2" ;;
+                --name) name="$2"; name_set=true ;;
                 --model) model="$2"; [[ -n "${model//[[:space:]]/}" ]] ||
                     fail 'Model must not be empty' ;;
                 --kitty-address) address="$2" ;;
@@ -24,19 +25,29 @@ while (($#)); do
         --dry-run) dry_run=true; shift ;;
         --yolo) yolo=true; shift ;;
         --help)
-            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR --name NAME [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
+            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--name NAME] [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
             exit 0 ;;
         *) fail "Unknown argument: $1" ;;
     esac
 done
 
-[[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
-    fail 'Name must be 1-63 lowercase letters, digits, or hyphens'
+if [[ "$name_set" == true ]]; then
+    [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
+        fail 'Name must be 1-63 lowercase letters, digits, or hyphens'
+fi
 [[ -n "$directory" && -d "$directory" ]] || fail 'An existing working directory is required'
 [[ ! "$model" =~ [[:cntrl:]] ]] || fail 'Model must contain no control characters'
 directory="$(cd -- "$directory" && pwd -P)"
 command -v node >/dev/null || fail 'Node.js is required (also required by Agent Relay)'
 session_id="$(node -e 'console.log(require("node:crypto").randomUUID())')"
+if [[ "$name_set" == false ]]; then
+    helper_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+    name="$(node --disable-warning=ExperimentalWarning \
+        "$helper_directory/select-session-name.mjs" "$session_id" "$directory")" ||
+        fail 'Automatic naming failed; no session was launched'
+    [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
+        fail 'Automatic naming returned an invalid name; no session was launched'
+fi
 
 kitty_started=false
 bootstrap_handle=''

@@ -1,3 +1,4 @@
 __pycache__/
 *.pyc
 /skills/spawn-session/local-instructions.md
+/skills/spawn-session/wordlist.local.txt
