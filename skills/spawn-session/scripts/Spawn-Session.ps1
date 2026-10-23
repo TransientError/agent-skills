@@ -1,8 +1,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$WorkingDirectory,
-    [ValidatePattern('^[a-z0-9][a-z0-9-]{0,62}$')][string]$Name,
+    [string]$Name,
     [string]$Model,
+    [string]$Resume,
     [ValidateSet('windows-terminal', 'kitty')][string]$Terminal,
     [string]$WindowId = '0',
     [string]$KittyAddress,
@@ -12,6 +13,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 try {
+    $resuming = $PSBoundParameters.ContainsKey('Resume')
+    if ($resuming -and $Resume -notmatch '^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$') {
+        throw 'Resume requires an exact saved local session UUID'
+    }
     if ($PSBoundParameters.ContainsKey('Name') -and
         $Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
         throw 'Name must be 1-63 lowercase letters, digits, or hyphens'
@@ -31,24 +36,42 @@ try {
     if ($Terminal -eq 'windows-terminal' -and -not $IsWindows) {
         throw 'Windows Terminal is only supported on Windows'
     }
-    $sessionId = [guid]::NewGuid().ToString()
-    if (-not $PSBoundParameters.ContainsKey('Name')) {
+    $sessionId = if ($resuming) { $Resume.ToLowerInvariant() } else { [guid]::NewGuid().ToString() }
+    if ($resuming -or -not $PSBoundParameters.ContainsKey('Name')) {
         $null = Get-Command node -CommandType Application -ErrorAction Stop
+        $helperArgs = @($sessionId, $directory)
+        if ($resuming) {
+            $helperArgs += '--resume'
+            if ($PSBoundParameters.ContainsKey('Name')) { $helperArgs += $Name }
+        }
         $nameOutput = & node --disable-warning=ExperimentalWarning (
             Join-Path $PSScriptRoot 'select-session-name.mjs'
-        ) $sessionId $directory
+        ) @helperArgs
         if ($LASTEXITCODE -ne 0) {
-            throw 'Automatic naming failed; see the naming diagnostic above. No session was launched'
+            throw 'Session naming/resume check failed; see the diagnostic above. No session was launched'
         }
-        $Name = ($nameOutput -join "`n").Trim()
-        if ($Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
-            throw 'Automatic naming returned an invalid name; no session was launched'
+        if ($resuming) {
+            $resumeInfo = ($nameOutput -join "`n") | ConvertFrom-Json
+            if ($resumeInfo.PSObject.Properties.Name -notcontains 'name') {
+                throw 'Resume check returned no name field; no session was launched'
+            }
+            $Name = $resumeInfo.name
+        } else {
+            $Name = ($nameOutput -join "`n").Trim()
+        }
+        if (($Name -and $Name -cnotmatch '^[a-z0-9][a-z0-9-]{0,62}$') -or
+            (-not $resuming -and -not $Name)) {
+            throw 'Session naming returned an invalid name; no session was launched'
         }
     }
-    $childArgs = @(
-        '--experimental', '--remote', '--name', $Name,
-        '--session-id', $sessionId
-    )
+    $childArgs = @('--experimental', '--remote')
+    if ($resuming) {
+        $childArgs += @('--resume', $sessionId)
+        if ($PSBoundParameters.ContainsKey('Name')) { $childArgs += @('--name', $Name) }
+    } else {
+        $childArgs += @('--name', $Name, '--session-id', $sessionId)
+    }
+    $title = if ($Name) { $Name } else { "resume-$($sessionId.Substring(0, 8))" }
     if ($PSBoundParameters.ContainsKey('Model')) { $childArgs += @('--model', $Model) }
     if ($Yolo) { $childArgs += '--yolo' }
     $childEnv = [ordered]@{}
@@ -62,7 +85,7 @@ try {
         $value = [Environment]::GetEnvironmentVariable($key)
         if ($null -ne $value) { $childEnv[$key] = $value }
     }
-    $childEnv['AGENT_RELAY_NAME'] = $Name
+    $childEnv['AGENT_RELAY_NAME'] = $(if ($Name) { $Name } else { '' })
     if ($Terminal -eq 'windows-terminal') {
         $json = @{ environment = $childEnv; arguments = $childArgs } |
             ConvertTo-Json -Compress -Depth 4
@@ -75,7 +98,7 @@ try {
             '& copilot @($p.arguments)'
         $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
         $command = @(
-            'wt', '-w', $WindowId, 'new-tab', '--title', $Name, '-d', $directory,
+            'wt', '-w', $WindowId, 'new-tab', '--title', $title, '-d', $directory,
             'pwsh', '-NoExit', '-EncodedCommand', $encoded
         )
     } else {
@@ -85,7 +108,7 @@ try {
         }
         $command = @(
             'kitten', '@', '--to', $KittyAddress, 'launch', '--type=tab',
-            '--keep-focus', '--tab-title', $Name, '--cwd', $directory
+            '--keep-focus', '--tab-title', $title, '--cwd', $directory
         )
         foreach ($key in $childEnv.Keys) {
             $command += @('--env', "$key=$($childEnv[$key])")
@@ -95,7 +118,8 @@ try {
     $plan = [ordered]@{
         status = 'planned'
         session_id = $sessionId
-        name = $Name
+        name = $(if ($Name) { $Name } else { $null })
+        resume = $(if ($resuming) { $sessionId } else { $null })
         working_directory = $directory
         terminal = $Terminal
         focus = $(if ($Terminal -eq 'windows-terminal') {

@@ -1,10 +1,10 @@
 ---
 name: spawn-session
 description: >
-  Launch an independent interactive Copilot CLI peer in a Windows Terminal or
+  Launch or resume an independent interactive Copilot CLI peer in a Windows Terminal or
   Kitty tab, then coordinate through Agent Relay. Use when asked to "spawn a
   session", "open a worker tab", "launch a peer agent", "close a session",
-  "close a worker tab", or delegate work to a separately accessible conversation.
+  "close a worker tab", "resume a session in a new tab", or delegate work to a separately accessible conversation.
   Also closes explicitly selected Windows Terminal peer tabs. Not for ordinary
   task-tool subagents.
 ---
@@ -47,7 +47,8 @@ permissions unless the user explicitly requests YOLO for the child.
    task labels or names and pass them as explicit overrides. For an explicit name,
    check `list_relay_agents`; if it is already in use, ask rather than silently
    reusing it. Names must match `^[a-z0-9][a-z0-9-]{0,62}$`.
-   Create branches/worktrees only if separately asked.
+   Create branches/worktrees only if separately asked. To reopen saved history,
+   pass `Resume` / `--resume` with the exact local session UUID, not a new ID.
 2. Honor an explicit model request; otherwise omit the model override and let the
    new session use its configured default. The child does not inherit this
    conversation, model selection, agent profile, or mode automatically.
@@ -186,6 +187,13 @@ bash "<skill-dir>/scripts/spawn-session.sh" \
 
 Optional inputs:
 
+- `Resume` / `--resume`: exact UUID of saved local history on the target host
+  (not a picker, prefix, name, or cloud-only task). Reuses that ID via Copilot's
+  `--resume`, preserving the recorded Relay alias when available; an explicit
+  user-requested `Name` overrides it. Missing history, live local lock/Relay
+  presence, or a name collision fails before launch. No recorded alias means
+  `name: null` in the plan; Relay assigns it on startup. Use the exact ID for
+  readiness. `WorkingDirectory` is still required; use the saved session's directory.
 - `Name` / `--name`: exact name, only when explicitly requested by the user.
   Omit for automatic selection from the wordlist and local registry.
 - `Model` / `--model`: exact Copilot model ID, only when requested.
@@ -236,6 +244,8 @@ registration.
   Relay messages cannot approve native permission prompts.
 - Relaunching in a directory is not resuming its old conversation. Later work on
   the same task may reuse a live peer explicitly; unrelated work gets a new session.
+  Use `Resume` for stopped saved sessions, not to attach another copy to a live one.
+  Preflight checks are snapshots; Copilot's own session locking remains authoritative.
 
 ## Closing a peer (Windows Terminal only)
 

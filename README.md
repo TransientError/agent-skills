@@ -310,6 +310,12 @@ with exact-title/unique-match checks, optional inspected runtime-ID guard, a dry
 run, and verified tab removal. Closing is Windows-only and does not kill processes
 first or accept confirmation dialogs automatically.
 
+**Resume saved history:** `-Resume <session-uuid>` (PowerShell) or
+`--resume <session-uuid>` (Bash) reopens a stopped local session in a new tab,
+reusing its UUID and recorded Relay alias without generating a new session.
+Missing local history, known live sessions, and name collisions stop the launch.
+Supply its existing working directory; this is not attachment to a running peer.
+
 **Remote-host launches:** An existing session on the target host can run the
 helper locally over a shared Relay mesh and return the child's exact ID.
 The explicitly user-authorized remote workflow uses `-Yolo` / `--yolo` for that

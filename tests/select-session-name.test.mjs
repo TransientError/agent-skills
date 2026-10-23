@@ -69,7 +69,7 @@ export async function loadPlugins({ env, dataDir, reservedToolNames }) {
 `);
   }
   env.NAMING_CWD = directory;
-  const run = () => spawnSync(process.execPath, [helper, sessionId, directory], {
+  const run = (...args) => spawnSync(process.execPath, [helper, sessionId, directory, ...args], {
     cwd: root, env, encoding: "utf8", timeout: 15000,
   });
   const sqlite = (agents) => {
@@ -82,7 +82,13 @@ export async function loadPlugins({ env, dataDir, reservedToolNames }) {
       db.close();
     }
   };
-  return { directory, env, events, helper, plugins, run, sqlite };
+  const saved = (name = "saved-peer") => {
+    const state = join(home, "session-state", sessionId);
+    mkdirSync(join(state, "files"), { recursive: true });
+    writeFileSync(join(state, "events.jsonl"), '{"type":"session.start"}\n');
+    if (name !== null) writeFileSync(join(state, "files", "agent-relay-name.txt"), name);
+  };
+  return { directory, env, events, helper, plugins, run, sqlite, saved };
 }
 
 test("shared roster skips a remote collision without consulting local SQLite or registering", (t) => {
@@ -197,6 +203,82 @@ test("an explicit wordlist fails clearly on older Relay instead of being ignored
 });
 
 for (const plugin of [false, true]) {
+  test(`resume preserves a saved alias without choosing from a wordlist (${plugin ? "shared mesh" : "SQLite"})`, (t) => {
+    const f = fixture(t, plugin);
+    f.saved();
+    if (!plugin) f.sqlite([
+      { id: sessionId, name: "saved-peer", heartbeat: "2000-01-01T00:00:00.000Z" },
+    ]);
+    f.env.AGENT_RELAY_WORDLIST_FILE = join(f.directory, "missing-wordlist.txt");
+    const result = f.run("--resume");
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { name: "saved-peer" });
+  });
+
+  test(`resume refuses an already active session (${plugin ? "shared mesh" : "SQLite"})`, (t) => {
+    const f = fixture(t, plugin);
+    f.saved();
+    f.env.NAMING_ROSTER = JSON.stringify([{ id: sessionId, name: "saved-peer" }]);
+    if (!plugin) f.sqlite([
+      { id: sessionId, name: "saved-peer", heartbeat: new Date().toISOString() },
+    ]);
+    const result = f.run("--resume");
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /already active.*connect/);
+    assert.equal(result.stdout, "");
+  });
+}
+
+test("resume refuses missing local history rather than creating a new session", (t) => {
+  const f = fixture(t);
+  const result = f.run("--resume");
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /No saved local history/);
+  assert.equal(result.stdout, "");
+});
+
+test("resume refuses a live local session lock even before Relay registers", (t) => {
+  const f = fixture(t);
+  f.saved();
+  writeFileSync(join(f.env.COPILOT_HOME, "session-state", sessionId, `inuse.${process.pid}.lock`), "");
+  const result = f.run("--resume");
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /already in use by a local process/);
+  assert.equal(result.stdout, "");
+});
+
+test("resume without a saved alias leaves name assignment to Relay", (t) => {
+  const f = fixture(t);
+  f.saved(null);
+  const result = f.run("--resume");
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), { name: null });
+});
+
+test("resume checks saved/explicit names against live peers", (t) => {
+  const f = fixture(t);
+  f.saved("occupied");
+  f.env.NAMING_ROSTER = JSON.stringify([{ id: "other", name: "occupied" }]);
+  const blocked = f.run("--resume");
+  assert.equal(blocked.status, 1, blocked.stderr);
+  assert.match(blocked.stderr, /name "occupied" is already active/);
+  const override = f.run("--resume", "new-name");
+  assert.equal(override.status, 0, override.stderr);
+  assert.deepEqual(JSON.parse(override.stdout), { name: "new-name" });
+});
+
+test("resume fails closed when the shared roster is unavailable", (t) => {
+  const f = fixture(t);
+  f.saved();
+  f.sqlite([]);
+  f.env.NAMING_LIST_ERROR = "1";
+  const result = f.run("--resume");
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /shared roster failed/);
+  assert.equal(readFileSync(f.events, "utf8"), "init\nlist\nstop\n");
+});
+
+for (const plugin of [false, true]) {
   test(`local SQLite selection preserves stale/self filtering (${plugin ? "non-transport plugin" : "no plugin"})`, (t) => {
     const f = fixture(t, plugin);
     if (plugin) f.env.NAMING_LOCAL_PLUGIN = "1";
@@ -214,6 +296,39 @@ for (const plugin of [false, true]) {
 }
 
 for (const shell of ["pwsh", "bash"]) {
+  for (const savedName of ["saved-peer", null]) {
+    test(`${shell} resume plan keeps the UUID and ${savedName ? "saved name" : "no inherited parent alias"}`, (t) => {
+      if (shell === "bash" && process.platform === "win32") {
+        t.skip("Bash launch validation requires native Linux/macOS, not WSL");
+        return;
+      }
+      if (spawnSync(shell, ["--version"]).error?.code === "ENOENT") {
+        t.skip(`${shell} is not installed`);
+        return;
+      }
+      const f = fixture(t);
+      f.saved(savedName);
+      f.env.AGENT_RELAY_NAME = "parent-name";
+      const scripts = join(root, "skills", "spawn-session", "scripts");
+      const args = shell === "pwsh"
+        ? ["-NoProfile", "-File", join(scripts, "Spawn-Session.ps1"),
+          "-WorkingDirectory", f.directory, "-Resume", sessionId, "-Terminal", "kitty",
+          "-KittyAddress", "unix:fixture", "-DryRun"]
+        : [join(scripts, "spawn-session.sh"), "--working-directory", f.directory,
+          "--resume", sessionId, "--kitty-address", "unix:fixture", "--dry-run"];
+      const result = spawnSync(shell, args, { env: f.env, encoding: "utf8", timeout: 15000 });
+      assert.equal(result.status, 0, result.stderr);
+      const plan = JSON.parse(result.stdout);
+      assert.equal(plan.session_id, sessionId);
+      assert.equal(plan.resume, sessionId);
+      assert.equal(plan.name, savedName);
+      assert.equal(plan.command[plan.command.indexOf("--resume") + 1], sessionId);
+      assert(!plan.command.includes("--session-id"));
+      assert(!plan.command.includes("--name"));
+      assert(plan.command.includes(`AGENT_RELAY_NAME=${savedName ?? ""}`));
+    });
+  }
+
   test(`${shell} forwards PostgreSQL mesh overrides without exposing passwords in its plan`, (t) => {
     if (shell === "bash" && process.platform === "win32") {
       t.skip("Bash launch validation requires native Linux/macOS, not WSL");

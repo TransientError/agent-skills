@@ -7,12 +7,14 @@ directory=''
 name=''
 name_set=false
 model=''
+resume=''
+resume_set=false
 address="${KITTY_LISTEN_ON:-}"
 dry_run=false
 yolo=false
 while (($#)); do
     case "$1" in
-        --working-directory|--name|--model|--kitty-address)
+        --working-directory|--name|--model|--kitty-address|--resume)
             (($# >= 2)) || fail "$1 requires a value"
             case "$1" in
                 --working-directory) directory="$2" ;;
@@ -20,12 +22,13 @@ while (($#)); do
                 --model) model="$2"; [[ -n "${model//[[:space:]]/}" ]] ||
                     fail 'Model must not be empty' ;;
                 --kitty-address) address="$2" ;;
+                --resume) resume="$2"; resume_set=true ;;
             esac
             shift 2 ;;
         --dry-run) dry_run=true; shift ;;
         --yolo) yolo=true; shift ;;
         --help)
-            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--name NAME] [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
+            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--resume SESSION_UUID] [--name NAME] [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
             exit 0 ;;
         *) fail "Unknown argument: $1" ;;
     esac
@@ -35,12 +38,35 @@ if [[ "$name_set" == true ]]; then
     [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
         fail 'Name must be 1-63 lowercase letters, digits, or hyphens'
 fi
+if [[ "$resume_set" == true ]]; then
+    [[ "$resume" =~ ^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$ ]] ||
+        fail 'Resume requires an exact saved local session UUID'
+    resume="${resume,,}"
+fi
 [[ -n "$directory" && -d "$directory" ]] || fail 'An existing working directory is required'
 [[ ! "$model" =~ [[:cntrl:]] ]] || fail 'Model must contain no control characters'
 directory="$(cd -- "$directory" && pwd -P)"
 command -v node >/dev/null || fail 'Node.js is required (also required by Agent Relay)'
-session_id="$(node -e 'console.log(require("node:crypto").randomUUID())')"
-if [[ "$name_set" == false ]]; then
+if [[ "$resume_set" == true ]]; then
+    session_id="$resume"
+    helper_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+    helper_args=("$session_id" "$directory" --resume)
+    if [[ "$name_set" == true ]]; then helper_args+=("$name"); fi
+    resume_info="$(node --disable-warning=ExperimentalWarning \
+        "$helper_directory/select-session-name.mjs" "${helper_args[@]}")" ||
+        fail 'Resume check failed; no session was launched'
+    name="$(node -e '
+const result = JSON.parse(process.argv[1]);
+if (!Object.hasOwn(result, "name") || (result.name !== null &&
+    (typeof result.name !== "string" || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(result.name)))) {
+    throw new Error("Resume check returned an invalid name");
+}
+process.stdout.write(result.name ?? "");
+' "$resume_info")" || fail 'Invalid resume check result; no session was launched'
+else
+    session_id="$(node -e 'console.log(require("node:crypto").randomUUID())')"
+fi
+if [[ "$resume_set" == false && "$name_set" == false ]]; then
     helper_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
     name="$(node --disable-warning=ExperimentalWarning \
         "$helper_directory/select-session-name.mjs" "$session_id" "$directory")" ||
@@ -48,6 +74,8 @@ if [[ "$name_set" == false ]]; then
     [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
         fail 'Automatic naming returned an invalid name; no session was launched'
 fi
+title="$name"
+if [[ -z "$title" ]]; then title="resume-${session_id:0:8}"; fi
 
 kitty_started=false
 bootstrap_handle=''
@@ -100,7 +128,7 @@ process.stdin.on("end", () => console.log(JSON.parse(input)[0].tabs[0].windows[0
 fi
 
 command=(kitten @ --to "$address" launch --type=tab --keep-focus
-    --tab-title "$name" --cwd "$directory")
+    --tab-title "$title" --cwd "$directory")
 for key in COPILOT_HOME AGENT_RELAY_DB AGENT_RELAY_DATA_DIR AGENT_RELAY_PLUGINS AGENT_RELAY_PLUGIN_DIR \
     AGENT_RELAY_ENV_FILE AGENT_RELAY_PG_HOST AGENT_RELAY_PG_USER AGENT_RELAY_PG_DB \
     AGENT_RELAY_PG_PORT AGENT_RELAY_PG_SSL AGENT_RELAY_AZURE_TENANT AZURE_CONFIG_DIR AGENT_RELAY_HOST \
@@ -109,8 +137,13 @@ for key in COPILOT_HOME AGENT_RELAY_DB AGENT_RELAY_DATA_DIR AGENT_RELAY_PLUGINS 
         command+=(--env "$key=$(printenv "$key")")
     fi
 done
-command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental --remote
-    --name "$name" --session-id "$session_id")
+command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental --remote)
+if [[ "$resume_set" == true ]]; then
+    command+=(--resume "$session_id")
+    if [[ "$name_set" == true ]]; then command+=(--name "$name"); fi
+else
+    command+=(--name "$name" --session-id "$session_id")
+fi
 if [[ -n "$model" ]]; then command+=(--model "$model"); fi
 if [[ "$yolo" == true ]]; then command+=(--yolo); fi
 
@@ -129,9 +162,9 @@ if [[ "$dry_run" == false ]]; then
 fi
 
 node -e '
-const [status, session_id, name, working_directory, model, handle, kitty_address, kitty_started, start_count, ...args] = process.argv.slice(1);
+const [status, session_id, name, working_directory, model, handle, kitty_address, kitty_started, resume, start_count, ...args] = process.argv.slice(1);
 console.log(JSON.stringify({
-    status, session_id, name, working_directory, terminal: "kitty",
+    status, session_id, name: name || null, resume: resume || null, working_directory, terminal: "kitty",
     focus: kitty_started === "true" ? "new-window-may-take-focus" : "keep-focus",
     terminal_handle: handle || null, model: model || null, kitty_address,
     kitty_started: kitty_started === "true",
@@ -139,4 +172,4 @@ console.log(JSON.stringify({
     command: args.slice(Number(start_count))
 }));
 ' "$status" "$session_id" "$name" "$directory" "$model" "$handle" \
-    "$address" "$kitty_started" "${#kitty_start_command[@]}" "${kitty_start_command[@]}" "${command[@]}"
+    "$address" "$kitty_started" "$resume" "${#kitty_start_command[@]}" "${kitty_start_command[@]}" "${command[@]}"
