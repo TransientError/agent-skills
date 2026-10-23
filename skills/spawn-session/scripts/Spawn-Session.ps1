@@ -64,7 +64,7 @@ try {
             throw 'Session naming returned an invalid name; no session was launched'
         }
     }
-    $childArgs = @('--experimental', '--remote')
+    $childArgs = @('--experimental')
     if ($resuming) {
         $childArgs += @('--resume', $sessionId)
     } else {

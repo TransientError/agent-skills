@@ -137,7 +137,7 @@ for key in COPILOT_HOME AGENT_RELAY_DB AGENT_RELAY_DATA_DIR AGENT_RELAY_PLUGINS 
         command+=(--env "$key=$(printenv "$key")")
     fi
 done
-command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental --remote)
+command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental)
 if [[ "$resume_set" == true ]]; then
     command+=(--resume "$session_id")
 else

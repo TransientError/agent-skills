@@ -328,6 +328,8 @@ for (const shell of ["pwsh", "bash"]) {
       assert.equal(plan.command[plan.command.indexOf("--resume") + 1], sessionId);
       assert(!plan.command.includes("--session-id"));
       assert(!plan.command.includes("--name"));
+      assert(!plan.command.includes("--remote"));
+      assert(!plan.command.includes("--yolo"));
       assert(plan.command.includes(`AGENT_RELAY_NAME=${explicitName ?? savedName ?? ""}`));
     });
   }
@@ -360,6 +362,8 @@ for (const shell of ["pwsh", "bash"]) {
     const result = spawnSync(shell, args, { env: f.env, encoding: "utf8", timeout: 15000 });
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
+    assert(!plan.command.includes("--remote"));
+    assert(!plan.command.includes("--yolo"));
     for (const key of ["AGENT_RELAY_ENV_FILE", "AGENT_RELAY_PG_HOST",
       "AGENT_RELAY_AZURE_TENANT", "AGENT_RELAY_WORDLIST_FILE", "AZURE_CONFIG_DIR"]) {
       assert(plan.command.includes(`${key}=${f.env[key]}`), key);
@@ -367,3 +371,36 @@ for (const shell of ["pwsh", "bash"]) {
     assert(!result.stdout.includes(f.env.AGENT_RELAY_PG_PASSWORD));
   });
 }
+
+test("Windows Terminal payload omits remote control for both fresh and resumed sessions", (t) => {
+  if (process.platform !== "win32") {
+    t.skip("Windows Terminal payload requires Windows");
+    return;
+  }
+  for (const resuming of [false, true]) {
+    const f = fixture(t);
+    if (resuming) f.saved();
+    const args = ["-NoProfile", "-File",
+      join(root, "skills", "spawn-session", "scripts", "Spawn-Session.ps1"),
+      "-WorkingDirectory", f.directory, "-Terminal", "windows-terminal", "-DryRun"];
+    if (resuming) args.push("-Resume", sessionId);
+    else args.push("-Name", "fixture-peer");
+    const result = spawnSync("pwsh", args, { env: f.env, encoding: "utf8", timeout: 15000 });
+    assert.equal(result.status, 0, result.stderr);
+    const plan = JSON.parse(result.stdout);
+    const script = Buffer.from(plan.command.at(-1), "base64").toString("utf16le");
+    const encodedPayload = /FromBase64String\('([^']+)'\)/.exec(script);
+    assert(encodedPayload, "Windows payload must remain decodable");
+    const payload = JSON.parse(Buffer.from(encodedPayload[1], "base64").toString("utf8"));
+    assert(payload.arguments.includes("--experimental"));
+    assert(!payload.arguments.includes("--remote"));
+    assert(!payload.arguments.includes("--yolo"));
+    if (resuming) {
+      assert.equal(payload.arguments[payload.arguments.indexOf("--resume") + 1], sessionId);
+      assert(!payload.arguments.includes("--name"));
+    } else {
+      assert.equal(payload.arguments[payload.arguments.indexOf("--name") + 1], "fixture-peer");
+      assert(payload.arguments.includes("--session-id"));
+    }
+  }
+});

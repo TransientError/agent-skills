@@ -232,8 +232,11 @@ registration.
 ## Access and lifecycle
 
 - Users can enter the new tab directly and answer normal permission prompts.
-- Workers launch with `--remote`; remote control still depends on account policy
-  and connectivity. Its failure does not imply local Relay failure.
+- Helpers do not enable Copilot remote control; Relay messaging does not require
+  it. Do not add the removed `--remote` flag. If the user separately requests
+  remote control on newer CLI versions, enable it in the child with `/remote on`;
+  manage incoming connections through `/environments` where supported. Account
+  policy and connectivity still apply; remote-control failure is not Relay failure.
 - Connect to the live session with `copilot --experimental --connect <session-id>`
   when available. Use `--resume <session-id>` for saved-history continuation,
   not as a guaranteed attachment to an already running process.

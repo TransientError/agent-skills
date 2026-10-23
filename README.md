@@ -318,6 +318,9 @@ tabs and hand off self-contained tasks through Agent Relay. Keeps normal
 permission prompts by default and existing worktrees; no fixed team roles or
 headless pool. Explicitly requested YOLO launches are supported with `-Yolo`
 (PowerShell) or `--yolo` (Bash), granting all permissions to that child only.
+Launchers do not enable Copilot remote control or pass the removed `--remote`
+flag; Agent Relay works independently. Enable remote control separately in the
+child if requested and supported by its CLI version.
 Kitty reuses a listening instance or starts one automatically on Linux/macOS.
 Existing Kitty tabs preserve focus; a new Kitty window or Windows Terminal tab
 may take focus.
