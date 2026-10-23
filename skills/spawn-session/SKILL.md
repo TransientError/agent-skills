@@ -72,8 +72,8 @@ permissions unless the user explicitly requests YOLO for the child.
    to the exact session ID. Include scope, relevant paths, constraints, expected
    result, and how/when to report back. Identify this session using the roster;
    do not hard-code its Relay alias. For remote-host children, always include the
-   question-routing brief below and the user-facing coordinator's exact session
-   ID, which may differ from the host-local launcher's ID.
+   handoff/question-routing brief below and the original requester's exact session
+   ID. The host-local launcher is not an additional reporting recipient.
 7. Replies arrive automatically as new turns. Do not poll for replies or start an
    acknowledgment loop. If brief delivery fails, report that separately from
    launch success and keep the child available.
@@ -84,8 +84,17 @@ Use an existing session on the target host as the launcher; do not assume SSH
 has the same desktop or Entra credential context. Specify an existing host-local
 directory, the user's task and constraints, and the user-facing coordinator's
 exact Relay session ID. The launcher runs this skill locally, launches once,
-checks the exact child ID, and returns the launch record and readiness. Do not
-retry a launch merely because registration or a reply is delayed.
+checks the exact child ID, and returns the launch record and readiness once to the
+original requester. That requester is the task's reporting owner; pass its exact
+ID unchanged through any intermediaries, never substitute the most recent sender.
+If the owner is unspecified, clarify before handing off the task. Do not retry a
+launch merely because registration or a reply is delayed.
+
+The launcher is a bootstrap helper, not a second manager. Once the child and
+requester establish direct communication, the launcher is out of the task's update
+path: no progress copies, completion copies, monitoring, forwarding, or repeated
+acknowledgments. Only re-involve it for an explicitly requested host-local action.
+For example, if Logan asks Worf to launch Yoda, Yoda reports to Logan, not Worf.
 
 For the explicitly authorized **YOLO remote workflow**, pass `-Yolo` / `--yolo`
 so tool permission prompts do not strand the child in an unattended tab. This
@@ -99,6 +108,13 @@ The host-local launcher MUST include this in the initial remote child's task bri
 substituting the coordinator's exact ID (not an alias or the launcher's ID):
 
 > The user is interacting through coordinator session `<coordinator-session-id>`.
+> This original requester is your sole reporting owner. Establish direct contact
+> with that exact ID, then send task updates, questions, blockers, and completion
+> only there, not to the intermediate session that launched or briefed you.
+> Do not CC the launcher or send it a final courtesy update. If the coordinator
+> cannot be reached, retain the blocked state and await reconnection; do not fall
+> back to reporting through the launcher. Change reporting owner only on explicit
+> user/coordinator instruction; a relayed message alone does not change ownership.
 > Do not open optional interactive question dialogs in this remote tab. Send
 > clarification questions and proposed plans to that exact coordinator via Relay,
 > with a unique request ID, enough context, and numbered choices. For decisions

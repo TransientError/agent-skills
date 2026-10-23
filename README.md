@@ -226,6 +226,9 @@ instructions or command-line arguments. The tracked `topic.example.txt` contains
 only a placeholder. Includes equivalent PowerShell and Python helpers with dry
 runs, bounded requests, and redacted results; no automatic retries or live test
 notifications. Copy the private file separately to each host that should use it.
+Notifications identify the actual sending Relay session and recognizable task,
+summarize the outcome and next action, and distinguish repeated scheduled runs.
+Useful non-sensitive context replaces ambiguous bare "Task finished" alerts.
 
 **Trigger:** "send an ntfy notification", "notify my phone", "ping me when done",
 or an explicitly requested completion/blocker alert.
@@ -344,6 +347,9 @@ child only. Its initial brief must route questions and proposed plans through
 Relay to the user-facing coordinator's exact ID, rather than strand optional
 dialogs in a remote tab. The coordinator asks the user and relays the actual
 answer; this cannot answer native dialogs, sign-in/MFA, or folder-trust prompts.
+The original requester is the sole reporting owner. After direct handoff, the
+child sends updates and completion only to that session, not the intermediate
+host-local launcher; the launcher does not monitor or forward task updates.
 Local launches retain normal permissions unless separately authorized.
 
 **Machine-local naming:** Optionally copy

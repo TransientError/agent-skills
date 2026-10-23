@@ -37,11 +37,9 @@ not encryption or an account access-control policy.
 1. Confirm that the user requested this notification or explicitly authorized the
    completion/blocker event. Creating or testing the skill is not permission to
    publish a live notification.
-2. Use a short, generic message such as "Task finished." or "Input is needed."
-   ntfy.sh is an external service: do not send source code, logs, credentials,
-   internal URLs, customer data, repository paths, or confidential work details.
-   Leave those details in the session. A notification is not an approval request
-   or proof that the phone received it.
+2. Identify the sending session and requested task, then summarize what happened
+   using **Notification content** below. Bare "Task finished." or "Input is needed."
+   messages are insufficient when several sessions or scheduled tasks are running.
 3. Resolve the helper relative to this skill and run it with `DryRun` / `--dry-run`
    first when checking setup. Dry runs read and validate the topic but do not
    contact any server or print its value.
@@ -52,6 +50,37 @@ not encryption or an account access-control policy.
    response, or HTTP failure, report delivery as unconfirmed; do not retry
    automatically because the first request may already have published.
 
+## Notification content
+
+Always supply a descriptive title and message, not just the helpers' default title.
+
+- **Title:** `[<relay-name>] <task label> - <status>`, for example
+  `[din] Session launcher fix - done`. Use the actual sending session's registered
+  Relay name, not a guessed alias or the target/launcher's name. Read the session's
+  `files/agent-relay-name.txt` or identify its exact ID in `list_relay_agents`.
+  If Relay identity is unavailable, use a short session-ID prefix and say the alias
+  is unavailable; do not omit identification or invent a name.
+- **Message:** one to three short sentences describing what you did, the concrete
+  outcome, and any remaining blocker or next action. Distinguish implemented from
+  committed/pushed, and queued/running from completed. Mention meaningful
+  verification when relevant; never claim success for failed or partial work.
+- **Scheduled tasks:** use the user's recognizable task label; add the run time
+  with timezone or a non-sensitive run label when repeated runs could be confused.
+  Do not expose internal scheduler identifiers.
+
+Example: title `[din] Session launcher fix - done`, message
+`Removed the obsolete launch flag. Regression checks passed; committed and pushed.`
+For a blocker: title `[cara] Editor setup - blocked`, message
+`Installed the editor. Compiler setup is waiting for your input; details are in the session.`
+Examples are illustrative: replace the sender, task, and outcome with actual facts.
+
+ntfy.sh is an external service and notifications may appear on a lock screen.
+Include useful **non-sensitive** context, not source code, logs, credentials,
+internal URLs, customer data, repository paths, or confidential work details.
+Use a safe task label and leave restricted details in the session; privacy is not
+a reason to omit the sender and all task context. A notification is not an
+approval request or proof that the phone received it.
+
 ## Helpers
 
 Windows: PowerShell 7. Linux/macOS: Python 3.9+ (standard library only).
@@ -61,11 +90,12 @@ Resolve `<skill-dir>` from this skill's installation location:
 
 ```powershell
 pwsh -NoProfile -File "<skill-dir>\scripts\Send-Ntfy.ps1" `
-    -Message 'Task finished.' -Title 'Agent notification' -DryRun
+    -Message 'Removed the obsolete launch flag. Regression checks passed; changes are not yet committed.' `
+    -Title '[din] Session launcher fix - done' -DryRun
 ```
 
 ```text
-python "<skill-dir>/scripts/send_ntfy.py" --message "Task finished." --title "Agent notification" --dry-run
+python "<skill-dir>/scripts/send_ntfy.py" --message "Removed the obsolete launch flag. Regression checks passed; changes are not yet committed." --title "[din] Session launcher fix - done" --dry-run
 ```
 
 Omit the dry-run switch only to publish an authorized notification. Both accept:
