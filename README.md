@@ -218,6 +218,22 @@ Launch and manage a per-session Neovide instance from Copilot CLI. Open files an
 
 **Prerequisites:** [Neovide](https://neovide.dev/) must be installed.
 
+### ntfy
+
+Send an explicitly requested phone/push notification through ntfy. Reads the
+private topic from the gitignored `skills/ntfy/topic.local.txt`, never from tracked
+instructions or command-line arguments. The tracked `topic.example.txt` contains
+only a placeholder. Includes equivalent PowerShell and Python helpers with dry
+runs, bounded requests, and redacted results; no automatic retries or live test
+notifications. Copy the private file separately to each host that should use it.
+
+**Trigger:** "send an ntfy notification", "notify my phone", "ping me when done",
+or an explicitly requested completion/blocker alert.
+
+**Prerequisites:** PowerShell 7 on Windows or Python 3.9+ on Linux/macOS, network
+access to ntfy, and an existing private topic subscription in the phone app.
+No ntfy CLI, Python packages, Bash, or OAuth login is required.
+
 ### open-in-emacs-wsl
 
 Open a Windows file in GNU Emacs running inside WSL, displayed on the Windows desktop via VcXsrv (not WSLg). Starts VcXsrv itself if it isn't running; if VcXsrv is running but misconfigured, it only warns and leaves restarting it to an explicit, user-confirmed step. **Windows-only.**
