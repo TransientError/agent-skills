@@ -140,7 +140,6 @@ done
 command+=(--env "AGENT_RELAY_NAME=$name" -- copilot --experimental --remote)
 if [[ "$resume_set" == true ]]; then
     command+=(--resume "$session_id")
-    if [[ "$name_set" == true ]]; then command+=(--name "$name"); fi
 else
     command+=(--name "$name" --session-id "$session_id")
 fi

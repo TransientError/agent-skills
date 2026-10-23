@@ -67,7 +67,6 @@ try {
     $childArgs = @('--experimental', '--remote')
     if ($resuming) {
         $childArgs += @('--resume', $sessionId)
-        if ($PSBoundParameters.ContainsKey('Name')) { $childArgs += @('--name', $Name) }
     } else {
         $childArgs += @('--name', $Name, '--session-id', $sessionId)
     }

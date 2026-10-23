@@ -296,8 +296,10 @@ for (const plugin of [false, true]) {
 }
 
 for (const shell of ["pwsh", "bash"]) {
-  for (const savedName of ["saved-peer", null]) {
-    test(`${shell} resume plan keeps the UUID and ${savedName ? "saved name" : "no inherited parent alias"}`, (t) => {
+  for (const [savedName, explicitName] of [
+    ["saved-peer", null], [null, null], ["saved-peer", "renamed-peer"],
+  ]) {
+    test(`${shell} resume plan keeps the UUID and ${explicitName ? "explicit Relay-only name" : savedName ? "saved name" : "no inherited parent alias"}`, (t) => {
       if (shell === "bash" && process.platform === "win32") {
         t.skip("Bash launch validation requires native Linux/macOS, not WSL");
         return;
@@ -316,16 +318,17 @@ for (const shell of ["pwsh", "bash"]) {
           "-KittyAddress", "unix:fixture", "-DryRun"]
         : [join(scripts, "spawn-session.sh"), "--working-directory", f.directory,
           "--resume", sessionId, "--kitty-address", "unix:fixture", "--dry-run"];
+      if (explicitName) args.push(shell === "pwsh" ? "-Name" : "--name", explicitName);
       const result = spawnSync(shell, args, { env: f.env, encoding: "utf8", timeout: 15000 });
       assert.equal(result.status, 0, result.stderr);
       const plan = JSON.parse(result.stdout);
       assert.equal(plan.session_id, sessionId);
       assert.equal(plan.resume, sessionId);
-      assert.equal(plan.name, savedName);
+      assert.equal(plan.name, explicitName ?? savedName);
       assert.equal(plan.command[plan.command.indexOf("--resume") + 1], sessionId);
       assert(!plan.command.includes("--session-id"));
       assert(!plan.command.includes("--name"));
-      assert(plan.command.includes(`AGENT_RELAY_NAME=${savedName ?? ""}`));
+      assert(plan.command.includes(`AGENT_RELAY_NAME=${explicitName ?? savedName ?? ""}`));
     });
   }
 

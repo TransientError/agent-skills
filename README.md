@@ -329,6 +329,8 @@ first or accept confirmation dialogs automatically.
 **Resume saved history:** `-Resume <session-uuid>` (PowerShell) or
 `--resume <session-uuid>` (Bash) reopens a stopped local session in a new tab,
 reusing its UUID and recorded Relay alias without generating a new session.
+An explicit name on resume overrides only the Relay alias and terminal title;
+it does not pass Copilot's incompatible `--name` flag or rename saved history.
 Missing local history, known live sessions, and name collisions stop the launch.
 Supply its existing working directory; this is not attachment to a running peer.
 

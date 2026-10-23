@@ -190,7 +190,9 @@ Optional inputs:
 - `Resume` / `--resume`: exact UUID of saved local history on the target host
   (not a picker, prefix, name, or cloud-only task). Reuses that ID via Copilot's
   `--resume`, preserving the recorded Relay alias when available; an explicit
-  user-requested `Name` overrides it. Missing history, live local lock/Relay
+  user-requested `Name` overrides only the Relay alias and terminal title through
+  `AGENT_RELAY_NAME`, not the saved conversation name. The helpers never combine
+  Copilot's incompatible `--resume` and `--name` flags. Missing history, live local lock/Relay
   presence, or a name collision fails before launch. No recorded alias means
   `name: null` in the plan; Relay assigns it on startup. Use the exact ID for
   readiness. `WorkingDirectory` is still required; use the saved session's directory.
