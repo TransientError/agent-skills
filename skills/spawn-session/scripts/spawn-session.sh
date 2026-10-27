@@ -7,6 +7,7 @@ directory=''
 name=''
 name_set=false
 model=''
+agent=''
 resume=''
 resume_set=false
 address="${KITTY_LISTEN_ON:-}"
@@ -14,13 +15,15 @@ dry_run=false
 yolo=false
 while (($#)); do
     case "$1" in
-        --working-directory|--name|--model|--kitty-address|--resume)
+        --working-directory|--name|--model|--agent|--kitty-address|--resume)
             (($# >= 2)) || fail "$1 requires a value"
             case "$1" in
                 --working-directory) directory="$2" ;;
                 --name) name="$2"; name_set=true ;;
                 --model) model="$2"; [[ -n "${model//[[:space:]]/}" ]] ||
                     fail 'Model must not be empty' ;;
+                --agent) agent="$2"; [[ -n "${agent//[[:space:]]/}" ]] ||
+                    fail 'Agent must not be empty' ;;
                 --kitty-address) address="$2" ;;
                 --resume) resume="$2"; resume_set=true ;;
             esac
@@ -28,7 +31,7 @@ while (($#)); do
         --dry-run) dry_run=true; shift ;;
         --yolo) yolo=true; shift ;;
         --help)
-            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--resume SESSION_UUID] [--name NAME] [--model MODEL] [--kitty-address SOCKET] [--yolo] [--dry-run]'
+            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--resume SESSION_UUID] [--name NAME] [--model MODEL] [--agent AGENT] [--kitty-address SOCKET] [--yolo] [--dry-run]'
             exit 0 ;;
         *) fail "Unknown argument: $1" ;;
     esac
@@ -45,6 +48,7 @@ if [[ "$resume_set" == true ]]; then
 fi
 [[ -n "$directory" && -d "$directory" ]] || fail 'An existing working directory is required'
 [[ ! "$model" =~ [[:cntrl:]] ]] || fail 'Model must contain no control characters'
+[[ ! "$agent" =~ [[:cntrl:]] ]] || fail 'Agent must contain no control characters'
 directory="$(cd -- "$directory" && pwd -P)"
 command -v node >/dev/null || fail 'Node.js is required (also required by Agent Relay)'
 if [[ "$resume_set" == true ]]; then
@@ -144,6 +148,7 @@ else
     command+=(--name "$name" --session-id "$session_id")
 fi
 if [[ -n "$model" ]]; then command+=(--model "$model"); fi
+if [[ -n "$agent" ]]; then command+=(--agent "$agent"); fi
 if [[ "$yolo" == true ]]; then command+=(--yolo); fi
 
 status=planned
@@ -161,14 +166,14 @@ if [[ "$dry_run" == false ]]; then
 fi
 
 node -e '
-const [status, session_id, name, working_directory, model, handle, kitty_address, kitty_started, resume, start_count, ...args] = process.argv.slice(1);
+const [status, session_id, name, working_directory, model, agent, handle, kitty_address, kitty_started, resume, start_count, ...args] = process.argv.slice(1);
 console.log(JSON.stringify({
     status, session_id, name: name || null, resume: resume || null, working_directory, terminal: "kitty",
     focus: kitty_started === "true" ? "new-window-may-take-focus" : "keep-focus",
-    terminal_handle: handle || null, model: model || null, kitty_address,
+    terminal_handle: handle || null, model: model || null, agent: agent || null, kitty_address,
     kitty_started: kitty_started === "true",
     kitty_start_command: args.slice(0, Number(start_count)),
     command: args.slice(Number(start_count))
 }));
-' "$status" "$session_id" "$name" "$directory" "$model" "$handle" \
+' "$status" "$session_id" "$name" "$directory" "$model" "$agent" "$handle" \
     "$address" "$kitty_started" "$resume" "${#kitty_start_command[@]}" "${kitty_start_command[@]}" "${command[@]}"

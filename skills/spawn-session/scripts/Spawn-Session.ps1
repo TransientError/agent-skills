@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory)][string]$WorkingDirectory,
     [string]$Name,
     [string]$Model,
+    [string]$Agent,
     [string]$Resume,
     [ValidateSet('windows-terminal', 'kitty')][string]$Terminal,
     [string]$WindowId = '0',
@@ -29,6 +30,11 @@ try {
         [string]::IsNullOrWhiteSpace($Model) -or $Model -match '[\x00-\x1f]'
     )) {
         throw 'Model must be nonempty and contain no control characters'
+    }
+    if ($PSBoundParameters.ContainsKey('Agent') -and (
+        [string]::IsNullOrWhiteSpace($Agent) -or $Agent -match '[\x00-\x1f\x7f]'
+    )) {
+        throw 'Agent must be nonempty and contain no control characters'
     }
     if (-not $Terminal) {
         $Terminal = if ($IsWindows) { 'windows-terminal' } else { 'kitty' }
@@ -72,6 +78,7 @@ try {
     }
     $title = if ($Name) { $Name } else { "resume-$($sessionId.Substring(0, 8))" }
     if ($PSBoundParameters.ContainsKey('Model')) { $childArgs += @('--model', $Model) }
+    if ($PSBoundParameters.ContainsKey('Agent')) { $childArgs += @('--agent', $Agent) }
     if ($Yolo) { $childArgs += '--yolo' }
     $childEnv = [ordered]@{}
     foreach ($key in @(
@@ -126,6 +133,7 @@ try {
         } else { 'keep-focus' })
         terminal_handle = $null
         model = $(if ($PSBoundParameters.ContainsKey('Model')) { $Model } else { $null })
+        agent = $(if ($PSBoundParameters.ContainsKey('Agent')) { $Agent } else { $null })
         command = $command
     }
     if (-not $DryRun) {

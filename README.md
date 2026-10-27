@@ -269,6 +269,22 @@ Prettify Markdown meant for human consumption so the raw source is readable — 
 
 **Prerequisites:** PowerShell Core (`pwsh`) on Windows, or Python 3 on Linux/macOS.
 
+### copy-rich-text
+
+Copy a message to the Windows clipboard as genuine rich-text HTML, with bold
+labels, inline code, and a Unicode plain-text fallback. Preserves wording, escapes
+text safely, and handles non-ASCII CF_HTML byte offsets. Paste with Ctrl+V into
+Teams or another HTML-aware editor; paste-as-plain-text discards formatting.
+Does not send messages or automate Teams. Includes a clipboard-free dry run.
+
+**Trigger:** "format for Teams", "copy as rich text", "Markdown doesn't paste well",
+or "put formatted message on clipboard".
+
+**Prerequisites:** Windows interactive desktop, Windows PowerShell 5.1, and
+built-in `System.Windows.Forms`. Windows-only by design; no additional packages
+or Python implementation are needed for this WinForms clipboard helper.
+PowerShell 7 invocation automatically relaunches Windows PowerShell STA when needed.
+
 ### reveal-in-explorer
 
 Open Windows File Explorer to the folder **containing** a file we've been working on — handy for dragging it elsewhere. Opens the folder plainly by default; highlights/selects the file only when you say "select". **Windows-only.**
@@ -321,6 +337,10 @@ tabs and hand off self-contained tasks through Agent Relay. Keeps normal
 permission prompts by default and existing worktrees; no fixed team roles or
 headless pool. Explicitly requested YOLO launches are supported with `-Yolo`
 (PowerShell) or `--yolo` (Bash), granting all permissions to that child only.
+Start the child as a requested Copilot agent profile with `-Agent 'doc-review'`
+(PowerShell) or `--agent doc-review` (Bash), including when resuming history.
+The profile must already be available to Copilot in the child's directory/home;
+omitting this option leaves agent selection to Copilot, not the parent's profile.
 Launchers do not enable Copilot remote control or pass the removed `--remote`
 flag; Agent Relay works independently. Enable remote control separately in the
 child if requested and supported by its CLI version.

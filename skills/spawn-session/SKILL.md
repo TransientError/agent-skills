@@ -50,8 +50,12 @@ permissions unless the user explicitly requests YOLO for the child.
    Create branches/worktrees only if separately asked. To reopen saved history,
    pass `Resume` / `--resume` with the exact local session UUID, not a new ID.
 2. Honor an explicit model request; otherwise omit the model override and let the
-   new session use its configured default. The child does not inherit this
-   conversation, model selection, agent profile, or mode automatically.
+   new session use its configured default. When the user requests an agent profile,
+   pass its exact name with `Agent` / `--agent` to start Copilot as that agent.
+   The profile must be available to Copilot in the child's directory/home;
+   the helper does not install profiles. Otherwise omit the agent override.
+   The child does not inherit this conversation, model selection, agent profile,
+   or mode automatically.
    Pass `Yolo` / `--yolo` only when the user explicitly requests YOLO or
    unrestricted permissions for the child. Never infer it from the parent's mode
    or a request to delegate work.
@@ -188,8 +192,8 @@ wordlist selection; local naming notes are not permission to bypass it.
 ## Launch helpers
 
 Use PowerShell on Windows and Bash on Linux/macOS. Both return a JSON launch
-record and preserve model arguments literally. PowerShell can also target Kitty
-when `pwsh` is preferred on Linux/macOS.
+record and preserve model and agent arguments literally. PowerShell can also
+target Kitty when `pwsh` is preferred on Linux/macOS.
 
 ```powershell
 pwsh -NoProfile -File "<skill-dir>\scripts\Spawn-Session.ps1" `
@@ -215,6 +219,10 @@ Optional inputs:
 - `Name` / `--name`: exact name, only when explicitly requested by the user.
   Omit for automatic selection from the wordlist and local registry.
 - `Model` / `--model`: exact Copilot model ID, only when requested.
+- `Agent` / `--agent`: exact Copilot agent profile name, only when requested,
+  for example `-Agent 'doc-review'` or `--agent doc-review`. Passed to Copilot's
+  `--agent` on new and resumed sessions and included as `agent` in the JSON record
+  (`null` when omitted). This selects the child profile, not its Relay name or model.
 - `Yolo` / `--yolo`: pass Copilot's `--yolo` flag to the child, enabling all
   permissions (tools, paths, and URLs). Use only on explicit user request;
   omitted by default. This does not change global settings.
