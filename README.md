@@ -261,7 +261,9 @@ Launch and manage a per-session Neovide instance from Copilot CLI. Open files an
 
 **Trigger:** "show me", "open in neovide", "open this file", "neovide", or asking to visually display a file.
 
-**Prerequisites:** [Neovide](https://neovide.dev/) must be installed.
+**Prerequisites:** [Neovide](https://neovide.dev/) and Neovim (`nvim`) on PATH,
+a graphical desktop session, and `COPILOT_AGENT_SESSION_ID`. Uses one bundled
+helper invocation: POSIX shell on Linux/macOS, PowerShell Core (`pwsh`) on Windows.
 
 ### ntfy
 
