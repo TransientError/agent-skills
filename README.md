@@ -77,17 +77,24 @@ the added `statusLine` and `footer.showCustom` keys.
 
 ## Agents
 
-Agent profiles live in `agents/`. To install `doc-review` for all projects on
-Linux/macOS, run from your local clone or worktree:
+Agent profiles live in `agents/`.
+
+On Linux/macOS, run from your local clone or worktree:
+
+```bash
+./link-agents.sh          # create symlink
+./link-agents.sh --force  # back up existing agents/ to agents.bak and link
+./link-agents.sh --remove # remove this repo's symlink
+```
+
+This creates a directory symlink at `~/.copilot/agents` (or
+`$COPILOT_HOME/agents`) pointing to this repo's `agents` directory, or you can
+symlink individual profiles if preferred:
 
 ```bash
 mkdir -p ~/.copilot/agents
 ln -s "$PWD/agents/doc-review.agent.md" ~/.copilot/agents/doc-review.agent.md
 ```
-
-If the destination already exists, review it before replacing it. The symlink
-keeps the repository file as the source of truth while drafting. Keep this
-clone or worktree available for the link to remain valid.
 
 On Windows, run from your local clone or worktree (PowerShell required):
 
@@ -98,13 +105,14 @@ On Windows, run from your local clone or worktree (PowerShell required):
 This creates an NTFS directory junction from `%USERPROFILE%\.copilot\agents`
 to this repo's entire `agents` directory; edits and new agent profiles are
 available without recopying. No administrator privileges are required. Keep
-this clone or worktree available for the junction to remain valid.
+this clone or worktree available for the link or junction to remain valid.
 
-Existing content is not replaced by default. Use `.\link-agents.ps1 -Force`
-to move it to `%USERPROFILE%\.copilot\agents.bak` before linking (an existing
+Existing content is not replaced by default. Use `./link-agents.sh --force` or
+`.\link-agents.ps1 -Force` to move it to `agents.bak` before linking (an existing
 backup is never overwritten). This replaces the entire agents directory, so
-agents in the backup are not loaded. Use `.\link-agents.ps1 -Remove` to remove
-only this repo's junction, leaving the source files and any backup untouched.
+agents in the backup are not loaded. Use `./link-agents.sh --remove` or
+`.\link-agents.ps1 -Remove` to remove only this repo's link, leaving the source
+files and any backup untouched.
 
 Restart Copilot CLI after installation, then select an agent through `/agent`.
 

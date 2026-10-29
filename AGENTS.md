@@ -8,7 +8,8 @@ A collection of Agent Skills for GitHub Copilot CLI and other AI coding agents.
 Each skill lives in `skills/<name>/`, containing a `SKILL.md` (YAML frontmatter +
 body) and optional `scripts/`, `references/`, `assets/`, or `templates/` folders.
 `link-skills.ps1` / `link-skills.sh` link skill directories into
-`~/.copilot/skills/` for local development.
+`~/.copilot/skills/` for local development, and `link-agents.ps1` /
+`link-agents.sh` link `agents/` into `~/.copilot/agents/`.
 
 ## Skills must be cross-platform by default
 
