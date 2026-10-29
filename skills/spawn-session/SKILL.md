@@ -147,12 +147,10 @@ Both launch helpers share `scripts/select-session-name.mjs`, using Node.js's
 built-in SQLite support rather than Python or an external SQLite package.
 When no explicit name is supplied, the helper:
 
-1. An explicit `AGENT_RELAY_WORDLIST_FILE` uses the installed Relay's `loadWords`
-   API (upgrade Relay if that API is unavailable). Otherwise it uses
-   `wordlist.local.txt` beside this skill if present: one lowercase name per line,
-   blank lines ignored. Without that file, it loads the child's installed Relay
-   wordlist, calling `loadWords` when supported (including the fork's optional
-   `<COPILOT_HOME>/agent-relay-wordlist.txt`), otherwise using bundled `WORDS`.
+1. Loads the child's installed Relay wordlist, calling `loadWords` when supported
+   (including the fork's optional `<COPILOT_HOME>/agent-relay-wordlist.txt`),
+   otherwise using bundled `WORDS`. An explicit `AGENT_RELAY_WORDLIST_FILE`
+   uses Relay's `loadWords` API (upgrade Relay if that API is unavailable).
    Names must be valid and unique; an empty or invalid list is an error.
 2. Reads the active Relay roster once. For plugin-configured meshes, it uses the
    child's installed plugin loader, transport, and credentials (including the
@@ -177,10 +175,11 @@ installed Relay plugin-loader API and working transport credentials. The roster
 read does not reserve a name, so concurrent launches can still race. Use session
 IDs to address peers reliably.
 
-To enforce different themes or exclusions per machine, customize the gitignored
-`wordlist.local.txt`; it takes effect automatically, without a local instructions
-file. Do not modify Relay's own wordlist. Editing a list can change the hash mapping
-for future sessions; existing sessions keep their names.
+To enforce different themes or exclusions per machine, configure Relay's private
+`<COPILOT_HOME>/agent-relay-wordlist.txt` or `AGENT_RELAY_WORDLIST_FILE` using a
+Relay build with `loadWords` support. Spawned and ordinary sessions then share
+the same list. Do not modify Relay's bundled wordlist. Editing a list can change
+the hash mapping for future sessions; existing sessions keep their names.
 
 Use local naming notes only for naming preferences. Explicit user requests take
 precedence; local preferences do not override name validation, collision checks,

@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
 /skills/spawn-session/local-instructions.md
-/agents/model-tiers.local.json
-/skills/spawn-session/wordlist.local.txt
 /skills/ntfy/topic.local.txt
+/agents/model-tiers.local.json

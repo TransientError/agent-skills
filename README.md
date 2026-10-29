@@ -433,8 +433,7 @@ Local launches retain normal permissions unless separately authorized.
 **Machine-local naming:** Optionally copy
 `skills/spawn-session/local-instructions.example.md` to `local-instructions.md`
 in the same directory for local naming notes. Both launch helpers automatically
-choose names from a gitignored `wordlist.local.txt` beside the skill (one name per
-line), or Relay's installed wordlist when no local list exists. They hash the actual
+choose names from Relay's installed wordlist. They hash the actual
 launch session ID into the list and probe forward with wraparound, skipping active
 names from Relay's active roster, including other machines on a PostgreSQL mesh.
 Plugin meshes use the installed Relay transport and credentials; local SQLite
@@ -442,12 +441,12 @@ remains read-only. No AI name selection or Python is needed. Only explicit
 user-requested names should use `-Name` / `--name`. Selection is best-effort, not an
 atomic reservation. Shared-transport initialization can apply schema migrations,
 including during dry runs; connection failures stop the launch rather than fall
-back to SQLite. Local files are not synced by Git, and these preferences do not
-affect ordinary Relay sessions unless the same file is configured there.
-`AGENT_RELAY_WORDLIST_FILE` takes precedence over the skill-local list when the
-installed Relay supports it. Without a skill-local list, the
-[Relay fork](https://github.com/TransientError/agent-relay)'s effective per-user
-wordlist is used when available, with bundled names on older Relay builds.
+back to SQLite. With the
+[Relay fork](https://github.com/TransientError/agent-relay), customize
+`<COPILOT_HOME>/agent-relay-wordlist.txt` or set `AGENT_RELAY_WORDLIST_FILE` to
+share one private list between spawned and ordinary Relay sessions. Local files
+are not synced by Git. Older Relay builds use bundled names and reject explicit
+wordlist overrides they cannot support.
 
 **Trigger:** "spawn a session", "open a worker tab", "launch a peer agent",
 "close a session", "close a worker tab", or delegate to a separately accessible
@@ -473,7 +472,7 @@ WezTerm, iTerm2, tmux, and headless hosting are not supported by this skill.
 
 Clean up stale git worktrees and branches whose PRs already merged or closed. Detects squash-merged branches (Azure DevOps + GitHub) via `merge-tree`, confirms PR status through `az`/`gh`, and removes worktrees with a dry-run-first, recovery-SHA workflow. Understands the `pr-<id>` review-checkout convention and skips Copilot-managed worktrees.
 
-**Trigger:** "clean up worktrees", "clean workspace", "delete merged worktrees", "prune worktrees", "which worktrees can I delete", or "clean up pr-* review branches".
+**Trigger:** "clean up worktrees", "clean workspace", "delete merged worktrees", "prune worktrees", "which worktrees can I delete", or "clean up pr-\* review branches".
 
 **Prerequisites:** PowerShell + git. PR-status lookups need the [Azure CLI](https://learn.microsoft.com/cli/azure/) (`az`, with the `azure-devops` extension) or the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated for your repo.
 

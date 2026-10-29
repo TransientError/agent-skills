@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 try {
   const [major, minor] = process.versions.node.split(".").map(Number);
@@ -62,19 +62,12 @@ try {
       throw new Error("Saved Relay name is invalid; supply an explicit valid name to resume");
     }
   } else {
-    const localWordlist = join(dirname(fileURLToPath(import.meta.url)), "..", "wordlist.local.txt");
-    const hasLocalWordlist = !env.AGENT_RELAY_WORDLIST_FILE &&
-      statSync(localWordlist, { throwIfNoEntry: false });
-    const source = hasLocalWordlist ? localWordlist : join(relayDir, "identity", "wordlist.mjs");
-    if (hasLocalWordlist) {
-      names = readFileSync(source, "utf8").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-    } else {
-      const wordlist = await import(pathToFileURL(source).href);
-      if (env.AGENT_RELAY_WORDLIST_FILE && typeof wordlist.loadWords !== "function") {
-        throw new Error("Installed Relay does not support AGENT_RELAY_WORDLIST_FILE; upgrade Relay first");
-      }
-      names = typeof wordlist.loadWords === "function" ? wordlist.loadWords({ env }) : wordlist.WORDS;
+    const source = join(relayDir, "identity", "wordlist.mjs");
+    const wordlist = await import(pathToFileURL(source).href);
+    if (env.AGENT_RELAY_WORDLIST_FILE && typeof wordlist.loadWords !== "function") {
+      throw new Error("Installed Relay does not support AGENT_RELAY_WORDLIST_FILE; upgrade Relay first");
     }
+    names = typeof wordlist.loadWords === "function" ? wordlist.loadWords({ env }) : wordlist.WORDS;
     if (!Array.isArray(names) || names.length === 0 ||
         names.some((name) => typeof name !== "string" || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(name)) ||
         new Set(names).size !== names.length) {

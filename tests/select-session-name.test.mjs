@@ -25,7 +25,9 @@ function fixture(t, plugin = true) {
   mkdirSync(plugins, { recursive: true });
   const helper = join(scripts, "select-session-name.mjs");
   copyFileSync(join(root, "skills", "spawn-session", "scripts", "select-session-name.mjs"), helper);
-  writeFileSync(join(skill, "wordlist.local.txt"), names.join("\n"));
+  mkdirSync(join(relay, "identity"));
+  writeFileSync(join(relay, "identity", "wordlist.mjs"),
+    `export const WORDS = ${JSON.stringify(names)};`);
   const events = join(directory, "events.txt");
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
     !key.toUpperCase().startsWith("AGENT_RELAY_") && key.toUpperCase() !== "COPILOT_HOME"));
@@ -163,11 +165,18 @@ test("the same session ID does not collide with itself in the shared roster", (t
   assert.equal(result.stdout.trim(), names[start]);
 });
 
+test("ignores a legacy skill-local list and uses Relay's bundled names", (t) => {
+  const f = fixture(t);
+  writeFileSync(join(dirname(dirname(f.helper)), "wordlist.local.txt"), "legacy-name\n");
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), names[(start + 1) % names.length]);
+});
+
 for (const explicit of [false, true]) {
-  test(`uses the fork's ${explicit ? "explicit override ahead of the skill-local list" : "default per-user list without a skill-local list"}`, (t) => {
+  test(`uses the fork's ${explicit ? "explicit override" : "default per-user list"}`, (t) => {
     const f = fixture(t);
     const relay = join(f.env.COPILOT_HOME, "extensions", "agent-relay");
-    mkdirSync(join(relay, "identity"));
     writeFileSync(join(relay, "identity", "wordlist.mjs"), `
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -181,7 +190,6 @@ export function loadWords({env}) {
       f.env.AGENT_RELAY_WORDLIST_FILE = join(f.directory, "private.txt");
       writeFileSync(f.env.AGENT_RELAY_WORDLIST_FILE, "private-name\n");
     } else {
-      rmSync(join(dirname(dirname(f.helper)), "wordlist.local.txt"));
       writeFileSync(join(f.env.COPILOT_HOME, "agent-relay-wordlist.txt"), "private-name\n");
     }
     const result = f.run();
@@ -193,7 +201,6 @@ export function loadWords({env}) {
 test("an explicit wordlist fails clearly on older Relay instead of being ignored", (t) => {
   const f = fixture(t);
   const identity = join(f.env.COPILOT_HOME, "extensions", "agent-relay", "identity");
-  mkdirSync(identity);
   writeFileSync(join(identity, "wordlist.mjs"), 'export const WORDS = ["bundled"];');
   f.env.AGENT_RELAY_WORDLIST_FILE = join(f.directory, "private.txt");
   const result = f.run();
