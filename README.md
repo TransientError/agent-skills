@@ -365,6 +365,21 @@ Complements `doc-review`; does not rewrite skills or run their scripts by defaul
 **Prerequisites:** Access to the target skill and relevant supporting resources.
 No skill execution or additional tooling is required for a textual review.
 
+### speckit-mode
+
+Apply the repository's installed `speckit.implement` workflow without switching
+agents. Reads the project's implementation instructions and relevant references,
+preserves the current agent's compatible routing and delegation responsibilities,
+and surfaces conflicts before proceeding when resolution changes behavior.
+No duplicated Spec Kit workflow or automatic installation.
+
+**Trigger:** "Spec Kit mode", "speckit mode", or implementation using the project's
+`speckit.implement` instructions.
+
+**Prerequisites:** A repository-local Spec Kit implementation profile or equivalent
+instruction file, typically `.github/agents/speckit.implement.agent.md`, plus any
+tools required by that workflow.
+
 ### speckit-review
 
 Help review a Spec Kit feature fluidly from specification to implementation plan
