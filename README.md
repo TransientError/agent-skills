@@ -129,6 +129,43 @@ work, not quick one-off edits.
 **Prerequisites:** A client with subagent support and the tools needed for the
 delegated work.
 
+### implement
+
+An implementation agent with active cost-aware delegation. Routes suitable work
+to small or medium models, owns integration and verification, and warns once at
+the start of a task about pre-existing staged, unstaged, or untracked changes.
+The warning is advisory, not a clean-worktree gate.
+
+**Use:** Select `implement` explicitly through `/agent` for implementation work.
+The `link-agents.sh` symlink and `link-agents.ps1` directory junction include it
+automatically, or symlink `agents/implement.agent.md` individually.
+
+**Personal model hints:** Copy `agents/model-tiers.example.json` to
+`agents/model-tiers.local.json` and fill each tier with model IDs. The local file
+is gitignored. The first entry is your default favorite; remaining entries are
+unranked alternatives the agent can choose for task fit. Tiers reflect your
+preferences, not vendor branding. Empty tiers are unspecified. These are flexible
+guidelines, not model locks or an ordered fallback chain.
+
+The agent explicitly reads `<COPILOT_HOME>/agents/model-tiers.local.json`, or
+`~/.copilot/agents/model-tiers.local.json` when `COPILOT_HOME` is unset. With the
+`link-agents.sh` symlink or Windows directory junction, the local file is already
+there. For individual Linux/macOS profile symlinks, also link the local JSON file
+from the clone:
+
+```bash
+ln -s "$PWD/agents/model-tiers.local.json" ~/.copilot/agents/model-tiers.local.json
+```
+
+Use your configured `COPILOT_HOME` instead of `~/.copilot` in installation paths
+when applicable. Review any existing destination before linking. Missing or stale
+hints do not block work; the agent respects available models and runtime settings.
+This file is read by the profile's instructions, not a built-in CLI configuration.
+
+**Prerequisites:** Git for the worktree reminder, and a client with subagent
+support and model selection for tier-aware delegation. Without delegation, the
+agent continues directly and reports the limitation.
+
 ### doc-review
 
 A document-reading partner that helps you review any document. Supports a short
