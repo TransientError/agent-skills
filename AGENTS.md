@@ -39,3 +39,12 @@ in its `SKILL.md` and README `Prerequisites`).
   `references/`.
 - After adding a skill, add a short entry to `README.md` (summary + triggers +
   any prerequisites).
+
+## Markdown formatting
+
+Use Prettier instead of the retired `prettify-markdown` skill and its custom
+table formatters. For human-facing Markdown you create or edit, run
+`bunx prettier --write <file.md>`, respecting the project's existing configuration.
+Without Bun, use `npx prettier --write <file.md>`.
+Prettier aligns tables and formats the rest of the document, so review the diff.
+Do not format agent/tool-only intermediate artifacts merely to align tables.

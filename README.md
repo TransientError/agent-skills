@@ -261,13 +261,26 @@ Generate terminal-based presentation slides in [presenterm](https://github.com/m
 
 **Prerequisites:** [presenterm](https://github.com/mfontanini/presenterm) must be installed.
 
-### prettify-markdown
+### Markdown formatting (replaces prettify-markdown)
 
-Prettify Markdown meant for human consumption so the raw source is readable — starting with aligning table columns (padding cells so the pipes line up). Applies only to human-facing Markdown (READMEs, docs, reports, PR descriptions), not agent-to-agent output.
+The `prettify-markdown` skill and its custom table formatters are retired.
+Use [Prettier](https://prettier.io/) for human-facing Markdown instead:
 
-**Trigger:** "prettify markdown", "clean up this markdown", "align the table", "make the raw markdown readable", "format markdown tables".
+```sh
+bunx prettier --write <file.md>
+```
 
-**Prerequisites:** PowerShell Core (`pwsh`) on Windows, or Python 3 on Linux/macOS.
+Without Bun, use `npx prettier --write <file.md>`. Prettier aligns Markdown
+tables and formats the rest of the document; review the diff and respect existing
+project configuration. Paragraph line breaks are preserved by default.
+With `proseWrap: "never"`, tables exceeding `printWidth` are compacted instead
+of aligned. Do not format agent/tool-only intermediate artifacts just for padding.
+
+Existing installations should remove only the old `prettify-markdown`
+symlink/junction from their client's skills directory. The link scripts do not
+prune retired skills automatically.
+
+**Prerequisites:** Bun, or Node.js with npm.
 
 ### copy-rich-text
 
