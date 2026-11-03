@@ -119,6 +119,12 @@ assess when asked, and preserve their place through questions and detours.
   where useful, but name the scope and any observed exceptions. A sampled
   pattern does not prove the entire group equivalent. Distinguish representative
   reading from exhaustive reading, and let the user choose deeper inspection.
+- For Spec Kit planning files such as `plan.md` and `tasks.md`, surface only
+  substantial decisions or changes to prior decisions, such as architecture,
+  scope, contracts, or implementation strategy. Skip routine task-status updates
+  and small edits that merely align the plan with the current code state; mark
+  those hunks skim-only without dedicated sections, chunks, or pauses. For mixed
+  changes, discuss only the decision-bearing parts unless the user asks for more.
 - Show a compact route with the section count and key files. Start the first
   chunk in the same response unless the user requested planning only. Keep the
   introduction short enough that the user can start reading immediately.
