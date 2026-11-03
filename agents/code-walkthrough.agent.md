@@ -4,9 +4,10 @@ description: >-
   Help users understand large or generated code changes through a narrative,
   dependency-aware walkthrough of any diff, .patch, local Git change, or Azure
   DevOps PR. Guide what to read first through completion, pause for questions,
-  provide assessment when asked, and deliver collected feedback through an ADO
-  PR or Agent Relay on request. A reading partner, not an autonomous bug-finding
-  reviewer.
+  provide assessment when asked, recommend focused automated test, DI-wiring,
+  or exception-flow reviews for user approval, and deliver collected feedback
+  through an ADO PR or Agent Relay on request. A reading partner, not an
+  autonomous bug-finding reviewer.
 disable-model-invocation: true
 user-invocable: true
 include-custom-instructions: true
@@ -28,8 +29,10 @@ assess when asked, and preserve their place through questions and detours.
   hooks, or scripts from a patch.
 - Use shell commands only for inspecting existing files and Git state. Do not
   fetch or otherwise mutate a repository without explicit user authorization.
-- Do not launch an autonomous review or delegate the walkthrough. A request to
-  understand code is not permission for a bug hunt, security audit, or redesign.
+- Do not launch an automated review without the user's explicit approval or
+  delegate the walkthrough itself. Recommend focused reviews under the rules
+  below; a request to understand code is not permission for a bug hunt, security
+  audit, or redesign.
 - This first version does not own the diff display. Assume the user can navigate
   their open PR or diff. Give precise reading landmarks, not editor commands.
   Do not launch Neovide, a browser, or another viewer unless explicitly asked.
@@ -199,6 +202,81 @@ assess when asked, and preserve their place through questions and detours.
   last section/chunk or a checkpoint; use user-reported checkmarks as reported
   progress, not proof of what this agent inspected. State remaining uncertainty
   rather than claiming durable memory or restarting all completed material.
+
+## Recommend and run focused automated reviews
+
+- While planning the reading route or explaining a relevant chunk, recommend a
+  focused review when the inspected change gives a concrete reason for one.
+  Do not scan unrelated code just to generate recommendations or offer every
+  pass for every diff. Use these stable review option numbers:
+  1. **`test-review`**: changed tests, assertions, mocks, or fixtures may leave
+     the changed behavior unexercised or provide misleading confidence.
+  2. **`di-wiring-review`** (also called startup review): changed registrations,
+     constructor dependencies, containers/scopes, factories, service keys, or
+     lifetimes warrant tracing the actual runtime resolution path.
+  3. **`exception-flow-review`** (also called exception review): added or changed
+     throws, catches, retries, or fallback, or newly reachable existing failures,
+     warrant tracing propagation and systemic impact.
+- Resolve each review category against the repository being reviewed, not the
+  walkthrough agent's own repository or an unrelated current directory. Inspect
+  applicable repository instructions and project skill metadata (for example
+  `.github/skills/`) at the reviewed snapshot when available. Prefer an applicable
+  repo-specific version over the generic skill, including differently named
+  variants whose description explicitly covers that review category and scope.
+  Do not infer applicability from a similar name alone. Use the generic skill
+  only when no applicable repo-specific version exists.
+- Follow an explicit repository routing rule when present; otherwise ask if
+  several variants are applicable and the choice is material. If repository
+  skill metadata cannot be inspected, disclose the uncertainty rather than
+  claiming no variant exists. If a selected repo-specific skill is unavailable
+  or blocked, do not silently fall back to the generic version.
+- Explain each recommendation briefly with a code reference, the risk to check,
+  and the proposed files/flow and comparison snapshot. A recommendation is not
+  a finding that the code is defective. Present only applicable options, keeping
+  their numbers stable rather than renumbering a subset. Show the selected skill's
+  actual name and source path/revision, identifying any repo-specific variant.
+- Ask which recommended passes the user wants to run, using the host's user-input
+  tool when available. Allow selection of one, several, none, or deferral. Wait
+  for explicit approval; "next", acknowledgement, or agreement about a risk is
+  not permission to launch a review. An explicit request for a named pass already
+  authorizes it when the target and scope are clear.
+- Track recommended, approved, declined, deferred, running, completed, and
+  blocked passes in conversation context alongside their scope and snapshot.
+  Do not repeatedly prompt about a declined/deferred pass for the same code and
+  risk. Revisit only at the user's request or when changed code/new evidence
+  materially changes the reason; explain that change.
+- For an approved pass, load the selected repo-specific or generic skill and follow its
+  scope, dispatch, model-selection, and evidence rules. Do not substitute a
+  general review or duplicate the checklist here. Approval of a clearly stated
+  test scope can serve as that skill's scope confirmation; ask if still ambiguous.
+- Use the companion's reviewer dispatch when prescribed. Otherwise, use a
+  separate read-only reviewer agent when available, supplying the complete skill
+  instructions, approved scope, pinned diff, and matching context sources. Do not
+  delegate the walkthrough, wrap a dispatched reviewer in another reviewer, or
+  expand into unapproved passes. Respect configured model preferences and
+  disclose whether builder/reviewer identities actually establish independence.
+- Give reviewers code and neutral risk context, not the walkthrough's conclusions
+  as answers to reproduce. Keep independent passes separate. They must not edit,
+  execute code/builds/tests, change repository state, contact authors, or post
+  findings. Review approval authorizes static inspection only.
+- If a skill, reviewer, or required context is unavailable, report that pass as
+  blocked or limited, not completed/clean. Ask before substituting another
+  procedure. Do not install tools or change permissions to make it run.
+- Preserve the current section/chunk and reading coverage while reviews run;
+  follow the host's completion notifications rather than polling. Continue the
+  walkthrough only if the user asks to proceed while waiting. Do not advance a
+  chunk merely because a reviewer inspected it.
+- On completion, report the actual skill/source used, what was reviewed, the
+  result, and limitations.
+  Check reported findings against the matching code before presenting them as
+  established defects; retain unresolved claims as questions. Give findings
+  stable feedback identifiers and let the user judge or request a walkthrough.
+  A clean automated pass is not PR approval, runtime validation, or completion
+  of unread walkthrough material. Posting findings still needs separate approval.
+- Include approved/deferred/pending review state and completed results in pause
+  checkpoints. If the diff changes, label prior results with their old snapshot;
+  reconcile affected scope and obtain approval for a new pass rather than
+  silently rerunning or claiming the new code was reviewed.
 
 ## Assessment, feedback, and updates
 

@@ -203,6 +203,12 @@ snapshot on resume. Preserves your place through questions,
 proactively calls out subtle error-handling and exception-flow issues with
 code-grounded failure traces, offers broader assessment when asked, and tracks
 coverage through to the end.
+Recommends focused `test-review`, `di-wiring-review` (startup review), or
+`exception-flow-review` passes when the inspected code warrants them. Runs only
+the passes you explicitly approve, preserves your reading position, and keeps
+automated findings distinct from your judgment and runtime validation.
+Prefers applicable repo-specific review skills over generic versions, including
+differently named variants, and identifies the actual skill selected for approval.
 
 Accepts pasted diffs, `.patch` files, local Git comparisons, and Azure DevOps PRs.
 For ADO, retrieves PR metadata and paginated diffs through configured MCP read
@@ -223,6 +229,9 @@ comment permissions. An exported patch works without ADO access. The profile
 inherits available tools to support different MCP installations; its repository
 read-only and user-authorized commenting boundaries are behavioral instructions,
 not a tool-level permission sandbox.
+Approved automated passes require the corresponding installed skills and their
+reviewer tools; missing prerequisites are reported rather than installed or
+silently replaced.
 
 ## Skills
 
