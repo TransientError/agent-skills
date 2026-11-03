@@ -249,6 +249,32 @@ user's requests rather than becoming an automatic audit.
 **Prerequisites:** Access to the agent definition and relevant referenced resources.
 No agent invocation or additional tooling is required for a textual review.
 
+### di-wiring-review
+
+Automated, read-only review of dependency-injection wiring affected by a change.
+Traces actual resolving containers, registrations, factories, lifetimes, and
+runtime activation paths, including gaps concealed by test-only containers.
+Reports cited findings and a PASS, FAIL, or BLOCKED result.
+
+**Trigger:** "DI review", "DI wiring review", "dependency injection review",
+"check dependency wiring", or "startup review".
+
+**Prerequisites:** Read access to the target diff and relevant composition code.
+No particular language, DI framework, or executable helper is required.
+
+### exception-flow-review
+
+Automated, read-only review of exceptions introduced or made reachable by a change.
+Traces propagation through callers, handlers, async boundaries, retries, and
+fallback to assess contract correctness and systemic failure impact.
+Reports cited findings and a PASS, FAIL, or BLOCKED result.
+
+**Trigger:** "exception review", "exception flow review", "review throws",
+"check exception handling", or "where are these exceptions caught".
+
+**Prerequisites:** Read access to the target diff, affected callers/handlers, and
+the operation's contract. No particular language or executable helper is required.
+
 ### latest-screenshot
 
 Find and attach screenshots from ~/Screenshots (swappy output).
