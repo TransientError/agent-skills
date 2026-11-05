@@ -12,7 +12,7 @@ const hasBash = process.platform !== "win32" &&
 
 for (const runtime of ["pwsh", "bash"]) {
   const available = runtime === "pwsh" ? hasPwsh : hasBash;
-  function run(agent, terminal = "kitty") {
+  function run(agent, terminal = "kitty", reportingMode) {
     const args = runtime === "pwsh"
       ? ["-NoProfile", "-File", join(scripts, "Spawn-Session.ps1"),
         "-WorkingDirectory", root, "-Name", "test-peer", "-Terminal", terminal,
@@ -20,8 +20,38 @@ for (const runtime of ["pwsh", "bash"]) {
       : [join(scripts, "spawn-session.sh"), "--working-directory", root,
         "--name", "test-peer", "--kitty-address", "unix:/unused", "--dry-run"];
     if (agent !== undefined) args.push(runtime === "pwsh" ? "-Agent" : "--agent", agent);
+    if (reportingMode !== undefined) args.push(
+      runtime === "pwsh" ? "-ReportingMode" : "--reporting-mode", reportingMode);
     return spawnSync(runtime, args, { encoding: "utf8", timeout: 15000 });
   }
+
+  test(`${runtime}: reporting mode is explicit handoff metadata, not a CLI flag`, { skip: !available }, () => {
+    for (const mode of [undefined, "parent", "user", "USER"]) {
+      const result = run(undefined, "kitty", mode);
+      assert.equal(result.status, 0, result.stderr);
+      const plan = JSON.parse(result.stdout);
+      assert.equal(plan.reporting_mode, (mode ?? "parent").toLowerCase());
+      assert.equal(plan.command.includes("--reporting-mode"), false);
+      assert.equal(plan.command.includes("-ReportingMode"), false);
+      if (plan.reporting_mode === "user") {
+        assert.match(plan.reporting_instructions, /user drives this tab directly/);
+        assert.match(plan.reporting_instructions, /Do not send unsolicited Relay updates/);
+        assert.match(plan.reporting_instructions, /only when the user explicitly requests/);
+      } else {
+        assert.match(plan.reporting_instructions, /one consolidated completion report/);
+        assert.match(plan.reporting_instructions, /do not send per-finding updates/);
+      }
+    }
+  });
+
+  test(`${runtime}: invalid reporting modes fail before launch`, { skip: !available }, () => {
+    for (const mode of ["", "background", "user; echo wrong"]) {
+      const result = run(undefined, "kitty", mode);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /ReportingMode/i);
+      assert.equal(result.stdout.trim(), "");
+    }
+  });
 
   test(`${runtime}: agent selection is optional and passed literally`, { skip: !available }, () => {
     for (const agent of [undefined, "doc-review", "plugin:reviewer's profile; $literal"]) {
@@ -52,15 +82,17 @@ for (const runtime of ["pwsh", "bash"]) {
     skip: !available || runtime !== "pwsh" || process.platform !== "win32",
   }, () => {
     const agent = "plugin:reviewer's profile; $literal";
-    const result = run(agent, "windows-terminal");
+    const result = run(agent, "windows-terminal", "user");
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
     assert.equal(plan.agent, agent);
+    assert.equal(plan.reporting_mode, "user");
     const encoded = plan.command[plan.command.indexOf("-EncodedCommand") + 1];
     const script = Buffer.from(encoded, "base64").toString("utf16le");
     const payload = script.match(/FromBase64String\('([^']+)'\)/);
     assert.ok(payload);
     const child = JSON.parse(Buffer.from(payload[1], "base64").toString("utf8"));
     assert.equal(child.arguments[child.arguments.indexOf("--agent") + 1], agent);
+    assert.equal(child.arguments.includes("--reporting-mode"), false);
   });
 }

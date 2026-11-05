@@ -451,6 +451,12 @@ Start the child as a requested Copilot agent profile with `-Agent 'doc-review'`
 (PowerShell) or `--agent doc-review` (Bash), including when resuming history.
 The profile must already be available to Copilot in the child's directory/home;
 omitting this option leaves agent selection to Copilot, not the parent's profile.
+Choose `-ReportingMode user` / `--reporting-mode user` when the user will drive
+the tab directly: findings, questions, and completion stay in that tab, with no
+unsolicited Relay updates. The default `parent` mode sends a consolidated
+completion report and actionable blockers, not a stream of individual findings.
+Helpers return the mode and reporting instructions for the initial task brief;
+this is not a Copilot CLI flag or a permission setting.
 Launchers do not enable Copilot remote control or pass the removed `--remote`
 flag; Agent Relay works independently. Enable remote control separately in the
 child if requested and supported by its CLI version.
@@ -473,14 +479,17 @@ Supply its existing working directory; this is not attachment to a running peer.
 **Remote-host launches:** An existing session on the target host can run the
 helper locally over a shared Relay mesh and return the child's exact ID.
 The explicitly user-authorized remote workflow uses `-Yolo` / `--yolo` for that
-child only. Its initial brief must route questions and proposed plans through
+child only. In `parent` reporting mode its brief routes questions and proposed plans through
 Relay to the user-facing coordinator's exact ID, rather than strand optional
 dialogs in a remote tab. The coordinator asks the user and relays the actual
 answer; this cannot answer native dialogs, sign-in/MFA, or folder-trust prompts.
-The original requester is the sole reporting owner. After direct handoff, the
-child sends updates and completion only to that session, not the intermediate
+In parent mode the original requester is the sole reporting owner. After handoff, the
+child sends consolidated completion/input blockers only to that session, not the intermediate
 host-local launcher; the launcher does not monitor or forward task updates.
 Local launches retain normal permissions unless separately authorized.
+With `user` reporting mode, keep questions, plans, blockers, and results in the
+remote tab instead; the user drives it directly, and no automatic parent/launcher
+report is sent. The launcher still returns one launch/readiness record.
 
 **Machine-local naming:** Optionally copy
 `skills/spawn-session/local-instructions.example.md` to `local-instructions.md`

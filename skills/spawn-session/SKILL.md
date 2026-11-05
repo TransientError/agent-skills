@@ -2,7 +2,7 @@
 name: spawn-session
 description: >
   Launch or resume an independent interactive Copilot CLI peer in a Windows Terminal or
-  Kitty tab, then coordinate through Agent Relay. Use when asked to "spawn a
+  Kitty tab, with parent-reported or directly user-driven handoff. Use when asked to "spawn a
   session", "open a worker tab", "launch a peer agent", "close a session",
   "close a worker tab", "resume a session in a new tab", or delegate work to a separately accessible conversation.
   Also closes explicitly selected Windows Terminal peer tabs. Not for ordinary
@@ -59,13 +59,20 @@ permissions unless the user explicitly requests YOLO for the child.
    Pass `Yolo` / `--yolo` only when the user explicitly requests YOLO or
    unrestricted permissions for the child. Never infer it from the parent's mode
    or a request to delegate work.
-3. Run the bundled helper, first with `DryRun` if reviewing launch arguments.
+3. Select `ReportingMode` / `--reporting-mode`: `parent` (default) for delegated
+   work returning to its requester, or `user` when the user will drive the tab
+   directly. "I'll check the tabs myself" means `user`; callers such as
+   `triage-open-prs` may explicitly require it. Pass the selected mode to the
+   helper and include its returned `reporting_instructions` verbatim in the task
+   brief. It is handoff metadata, not a Copilot CLI flag or permission setting.
+   Run the bundled helper, first with `DryRun` if reviewing launch arguments.
    Resolve the helper path relative to this skill, not the current repository.
    Choose Windows Terminal on Windows or Kitty on Linux/macOS. If neither applies,
    stop and explain; WezTerm, iTerm2, tmux, and headless hosting are outside this
    version. The Bash helper starts a new Kitty window if no listener is found.
 4. Retain the JSON result: session ID, Relay/session name, directory, terminal
-   handle (when provided), and focus behavior. `status: launched` means only that
+   handle (when provided), focus behavior, and reporting mode/instructions.
+   `status: launched` means only that
    the terminal accepted the command, not that Copilot or Relay is ready.
 5. Check `list_relay_agents` for the exact generated session ID with bounded
    retries (for example, at most six checks five seconds apart). This startup
@@ -74,12 +81,17 @@ permissions unless the user explicitly requests YOLO for the child.
    access, folder trust, sign-in, or other startup prompts. Do not spawn a duplicate.
 6. Once registered, send a self-contained task brief with `send_message` addressed
    to the exact session ID. Include scope, relevant paths, constraints, expected
-   result, and how/when to report back. Identify this session using the roster;
-   do not hard-code its Relay alias. For remote-host children, always include the
-   handoff/question-routing brief below and the original requester's exact session
-   ID. The host-local launcher is not an additional reporting recipient.
+   result, and the returned reporting instructions. Identify this session using
+   the roster; do not hard-code its Relay alias. `parent` mode sends one
+   consolidated completion report plus actionable questions/blockers, never
+   per-finding progress or courtesy acknowledgments. `user` mode keeps all
+   findings, questions, blockers, action receipts, and completion in that tab;
+   no unsolicited Relay reporting, including an initial acknowledgment.
+   For remote children use the mode-specific handoff below. The host-local
+   launcher is not an additional reporting recipient.
 7. Replies arrive automatically as new turns. Do not poll for replies or start an
-   acknowledgment loop. If brief delivery fails, report that separately from
+   acknowledgment loop. In user mode, do not await a completion message or chase
+   updates; the user checks the tab. If brief delivery fails, report separately from
    launch success and keep the child available.
 
 ## Remote-host launches and questions
@@ -89,16 +101,19 @@ has the same desktop or Entra credential context. Specify an existing host-local
 directory, the user's task and constraints, and the user-facing coordinator's
 exact Relay session ID. The launcher runs this skill locally, launches once,
 checks the exact child ID, and returns the launch record and readiness once to the
-original requester. That requester is the task's reporting owner; pass its exact
-ID unchanged through any intermediaries, never substitute the most recent sender.
-If the owner is unspecified, clarify before handing off the task. Do not retry a
+original requester. Pass the reporting mode unchanged through intermediaries.
+In `parent` mode that requester is the task's reporting owner; pass its exact
+ID unchanged, never substitute the most recent sender. Clarify a missing owner.
+In `user` mode the requester ID is launch provenance, not a reporting obligation.
+Do not retry a
 launch merely because registration or a reply is delayed.
 
-The launcher is a bootstrap helper, not a second manager. Once the child and
-requester establish direct communication, the launcher is out of the task's update
+The launcher is a bootstrap helper, not a second manager. After launch/readiness
+handoff and brief delivery, the launcher is out of the task's update
 path: no progress copies, completion copies, monitoring, forwarding, or repeated
 acknowledgments. Only re-involve it for an explicitly requested host-local action.
-For example, if Logan asks Worf to launch Yoda, Yoda reports to Logan, not Worf.
+For example, in parent mode if Logan asks Worf to launch Yoda, Yoda reports to
+Logan, not Worf. In user mode Yoda reports in its own tab, not to either session.
 
 For the explicitly authorized **YOLO remote workflow**, pass `-Yolo` / `--yolo`
 so tool permission prompts do not strand the child in an unattended tab. This
@@ -108,13 +123,15 @@ already been given for this remote workflow; a remote launch alone is not consen
 Keep ordinary local launches at normal permissions unless separately authorized.
 Do not restart or change permissions on an existing child just to apply this recipe.
 
-The host-local launcher MUST include this in the initial remote child's task brief,
+For `parent` mode, the launcher MUST include this in the initial remote task brief,
 substituting the coordinator's exact ID (not an alias or the launcher's ID):
 
 > The user is interacting through coordinator session `<coordinator-session-id>`.
 > This original requester is your sole reporting owner. Establish direct contact
-> with that exact ID, then send task updates, questions, blockers, and completion
-> only there, not to the intermediate session that launched or briefed you.
+> with that exact ID only when input is needed or the task is complete. Send one
+> consolidated completion report and actionable questions/blockers only there,
+> not per-finding progress or courtesy acknowledgments, and never to the
+> intermediate session that launched or briefed you.
 > Do not CC the launcher or send it a final courtesy update. If the coordinator
 > cannot be reached, retain the blocked state and await reconnection; do not fall
 > back to reporting through the launcher. Change reporting owner only on explicit
@@ -129,7 +146,14 @@ substituting the coordinator's exact ID (not an alias or the launcher's ID):
 > and blocking on its exit dialog. Honor higher-priority instructions requiring
 > native interaction; report those blockers instead of bypassing them.
 
-The coordinator presents the question to the user using its normal question UI
+For `user` mode, include the returned user-mode instructions instead of the
+parent-only routing block. The user will interact directly in that remote tab;
+questions and plans use its normal interactive UI. Do not establish automatic
+contact, route decisions through the coordinator, or send completion to either
+the requester or launcher. Explicit user requests can authorize a scoped report
+or change of reporting mode later; do not infer a switch from ordinary follow-up.
+
+In parent mode, the coordinator presents the question using its normal question UI
 and returns the actual answer to the child's exact ID with the request ID.
 Never invent a response or auto-approve. A Relay reply cannot dismiss an already
 open native dialog, approve permissions, complete sign-in/MFA, or grant folder
@@ -206,6 +230,12 @@ bash "<skill-dir>/scripts/spawn-session.sh" \
 
 Optional inputs:
 
+- `ReportingMode` / `--reporting-mode`: `parent` (default) or `user`. Returned as
+  `reporting_mode` plus `reporting_instructions` for the caller to include in its
+  Relay task brief, on new and resumed sessions. `user` suppresses unsolicited
+  reports to the parent/launcher; user-directed questions and results stay in
+  the tab. The helper does not itself configure agent behavior: the brief carries
+  the contract. Do not add a nonexistent Copilot reporting-mode flag.
 - `Resume` / `--resume`: exact UUID of saved local history on the target host
   (not a picker, prefix, name, or cloud-only task). Reuses that ID via Copilot's
   `--resume`, preserving the recorded Relay alias when available; an explicit

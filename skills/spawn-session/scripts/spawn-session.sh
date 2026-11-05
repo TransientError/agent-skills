@@ -10,12 +10,13 @@ model=''
 agent=''
 resume=''
 resume_set=false
+reporting_mode=parent
 address="${KITTY_LISTEN_ON:-}"
 dry_run=false
 yolo=false
 while (($#)); do
     case "$1" in
-        --working-directory|--name|--model|--agent|--kitty-address|--resume)
+        --working-directory|--name|--model|--agent|--kitty-address|--resume|--reporting-mode)
             (($# >= 2)) || fail "$1 requires a value"
             case "$1" in
                 --working-directory) directory="$2" ;;
@@ -26,17 +27,20 @@ while (($#)); do
                     fail 'Agent must not be empty' ;;
                 --kitty-address) address="$2" ;;
                 --resume) resume="$2"; resume_set=true ;;
+                --reporting-mode) reporting_mode="${2,,}" ;;
             esac
             shift 2 ;;
         --dry-run) dry_run=true; shift ;;
         --yolo) yolo=true; shift ;;
         --help)
-            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--resume SESSION_UUID] [--name NAME] [--model MODEL] [--agent AGENT] [--kitty-address SOCKET] [--yolo] [--dry-run]'
+            printf '%s\n' 'Usage: bash spawn-session.sh --working-directory DIR [--resume SESSION_UUID] [--name NAME] [--model MODEL] [--agent AGENT] [--reporting-mode parent|user] [--kitty-address SOCKET] [--yolo] [--dry-run]'
             exit 0 ;;
         *) fail "Unknown argument: $1" ;;
     esac
 done
 
+[[ "$reporting_mode" == parent || "$reporting_mode" == user ]] ||
+    fail 'ReportingMode must be parent or user'
 if [[ "$name_set" == true ]]; then
     [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] ||
         fail 'Name must be 1-63 lowercase letters, digits, or hyphens'
@@ -166,14 +170,18 @@ if [[ "$dry_run" == false ]]; then
 fi
 
 node -e '
-const [status, session_id, name, working_directory, model, agent, handle, kitty_address, kitty_started, resume, start_count, ...args] = process.argv.slice(1);
+const [status, session_id, name, working_directory, model, agent, handle, kitty_address, kitty_started, resume, reporting_mode, start_count, ...args] = process.argv.slice(1);
+const reporting_instructions = reporting_mode === "user"
+    ? "Reporting mode: user. The user drives this tab directly. Keep findings, progress, plans, questions, blockers, decisions, action receipts, and completion in this tab. Do not send unsolicited Relay updates or task acknowledgments to the parent or launcher. Report to another session only when the user explicitly requests it."
+    : "Reporting mode: parent. Report only to the exact requester session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.";
 console.log(JSON.stringify({
     status, session_id, name: name || null, resume: resume || null, working_directory, terminal: "kitty",
     focus: kitty_started === "true" ? "new-window-may-take-focus" : "keep-focus",
     terminal_handle: handle || null, model: model || null, agent: agent || null, kitty_address,
+    reporting_mode, reporting_instructions,
     kitty_started: kitty_started === "true",
     kitty_start_command: args.slice(0, Number(start_count)),
     command: args.slice(Number(start_count))
 }));
 ' "$status" "$session_id" "$name" "$directory" "$model" "$agent" "$handle" \
-    "$address" "$kitty_started" "$resume" "${#kitty_start_command[@]}" "${kitty_start_command[@]}" "${command[@]}"
+    "$address" "$kitty_started" "$resume" "$reporting_mode" "${#kitty_start_command[@]}" "${kitty_start_command[@]}" "${command[@]}"

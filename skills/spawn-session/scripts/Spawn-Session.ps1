@@ -5,6 +5,7 @@ param(
     [string]$Model,
     [string]$Agent,
     [string]$Resume,
+    [ValidateSet('parent', 'user')][string]$ReportingMode = 'parent',
     [ValidateSet('windows-terminal', 'kitty')][string]$Terminal,
     [string]$WindowId = '0',
     [string]$KittyAddress,
@@ -134,6 +135,12 @@ try {
         terminal_handle = $null
         model = $(if ($PSBoundParameters.ContainsKey('Model')) { $Model } else { $null })
         agent = $(if ($PSBoundParameters.ContainsKey('Agent')) { $Agent } else { $null })
+        reporting_mode = $ReportingMode.ToLowerInvariant()
+        reporting_instructions = $(if ($ReportingMode -eq 'user') {
+            'Reporting mode: user. The user drives this tab directly. Keep findings, progress, plans, questions, blockers, decisions, action receipts, and completion in this tab. Do not send unsolicited Relay updates or task acknowledgments to the parent or launcher. Report to another session only when the user explicitly requests it.'
+        } else {
+            'Reporting mode: parent. Report only to the exact requester session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.'
+        })
         command = $command
     }
     if (-not $DryRun) {
