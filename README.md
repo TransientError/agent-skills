@@ -366,13 +366,17 @@ prune retired skills automatically.
 
 ### copy-rich-text
 
-Copy a message to the Windows clipboard as genuine rich-text HTML, with bold
-labels, inline code, and a Unicode plain-text fallback. Preserves wording, escapes
+Copy a message to the Windows clipboard as genuine rich-text HTML, with native
+bordered tables, bold labels, inline code, and a Unicode plain-text fallback.
+Supports ordered paragraph/table blocks and existing paragraph-only input.
+Table fallback text is tab-separated, never an aligned-code-table substitute.
+Preserves wording, escapes
 text safely, and handles non-ASCII CF_HTML byte offsets. Paste with Ctrl+V into
 Teams or another HTML-aware editor; paste-as-plain-text discards formatting.
 Does not send messages or automate Teams. Includes a clipboard-free dry run.
 
-**Trigger:** "format for Teams", "copy as rich text", "Markdown doesn't paste well",
+**Trigger:** "format for Teams", "copy as rich text", "copy a table as rich text",
+"format a table for Teams", "Markdown doesn't paste well",
 or "put formatted message on clipboard".
 
 **Prerequisites:** Windows interactive desktop, Windows PowerShell 5.1, and
