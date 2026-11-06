@@ -38,6 +38,7 @@ for (const runtime of ["pwsh", "bash"]) {
         assert.match(plan.reporting_instructions, /Do not send unsolicited Relay updates/);
         assert.match(plan.reporting_instructions, /only when the user explicitly requests/);
       } else {
+        assert.match(plan.reporting_instructions, /exact reporting owner session ID in the task brief/);
         assert.match(plan.reporting_instructions, /one consolidated completion report/);
         assert.match(plan.reporting_instructions, /do not send per-finding updates/);
       }

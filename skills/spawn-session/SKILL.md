@@ -11,9 +11,33 @@ description: >
 
 # Spawn Session
 
-Create a normal interactive peer session, not a headless worker or a prescribed
+Create a normal interactive session, not a headless worker or a prescribed
 agent team. Keep the user's existing tabs and worktrees. Preserve normal
 permissions unless the user explicitly requests YOLO for the child.
+
+## Reporting hierarchy: peer versus child
+
+The user is always at the top of the reporting hierarchy. Interpret the user's
+relationship terms relative to the session requesting the spawn:
+
+1. **Peer:** the new session reports to the same owner that the requesting session
+   reports to, not to the requesting session itself. If you report directly to the
+   user, your peer also reports directly to the user in its own tab. If you report
+   to another session, your peer reports to that same session via Relay.
+2. **Child:** the new session reports to the requesting/spawning session via Relay.
+   It does not inherit that session's reporting owner.
+
+Relationship and delivery mode are separate: a peer uses `user` mode when its
+shared owner is the user, or `parent` mode when its shared owner is another
+session. A child uses `parent` mode with the requesting session as its owner.
+Never interpret "peer" as automatically reporting to the spawner, or as always
+using `user` mode. If the requesting session's owner is unknown, clarify it before
+launching a peer. An explicit reporting-owner instruction takes precedence.
+
+Resolve the owner before involving a remote-host bootstrap launcher; that launcher
+does not become the owner merely because it executes the launch helper. Include
+the relationship and reporting owner (the user, or an exact session ID) in the
+task brief. These are handoff metadata, not additional helper or Copilot flags.
 
 ## Scope and prerequisites
 
@@ -59,9 +83,11 @@ permissions unless the user explicitly requests YOLO for the child.
    Pass `Yolo` / `--yolo` only when the user explicitly requests YOLO or
    unrestricted permissions for the child. Never infer it from the parent's mode
    or a request to delegate work.
-3. Select `ReportingMode` / `--reporting-mode`: `parent` (default) for delegated
-   work returning to its requester, or `user` when the user will drive the tab
-   directly. "I'll check the tabs myself" means `user`; callers such as
+3. Resolve the reporting owner using **Reporting hierarchy: peer versus child**
+   first. Select `ReportingMode` / `--reporting-mode`: `parent` (helper default)
+   for Relay reporting to that exact owner session, or `user` for reporting
+   directly to the user in the new tab. Do not let the helper default override
+   a requested peer relationship. "I'll check the tabs myself" means `user`; callers such as
    `triage-open-prs` may explicitly require it. Pass the selected mode to the
    helper and include its returned `reporting_instructions` verbatim in the task
    brief. It is handoff metadata, not a Copilot CLI flag or permission setting.
@@ -98,11 +124,13 @@ permissions unless the user explicitly requests YOLO for the child.
 
 Use an existing session on the target host as the launcher; do not assume SSH
 has the same desktop or Entra credential context. Specify an existing host-local
-directory, the user's task and constraints, and the user-facing coordinator's
-exact Relay session ID. The launcher runs this skill locally, launches once,
+directory, the user's task and constraints, the resolved peer/child relationship,
+and the reporting owner's exact Relay session ID (or `user` for direct reporting).
+The launcher runs this skill locally, launches once,
 checks the exact child ID, and returns the launch record and readiness once to the
-original requester. Pass the reporting mode unchanged through intermediaries.
-In `parent` mode that requester is the task's reporting owner; pass its exact
+original requester. Pass the relationship, reporting owner, and reporting mode
+unchanged through intermediaries.
+In `parent` mode use the resolved owner, which need not be the launch requester; pass its exact
 ID unchanged, never substitute the most recent sender. Clarify a missing owner.
 In `user` mode the requester ID is launch provenance, not a reporting obligation.
 Do not retry a
@@ -112,8 +140,10 @@ The launcher is a bootstrap helper, not a second manager. After launch/readiness
 handoff and brief delivery, the launcher is out of the task's update
 path: no progress copies, completion copies, monitoring, forwarding, or repeated
 acknowledgments. Only re-involve it for an explicitly requested host-local action.
-For example, in parent mode if Logan asks Worf to launch Yoda, Yoda reports to
-Logan, not Worf. In user mode Yoda reports in its own tab, not to either session.
+For example, if Logan asks Worf to bootstrap Logan's child Yoda, Yoda reports to
+Logan, not Worf. If Logan reports to Luke and requests a peer instead, Yoda reports
+to Luke. If Logan reports directly to the user and requests a peer, Yoda reports
+in its own tab to the user, not to Logan or Worf.
 
 For the explicitly authorized **YOLO remote workflow**, pass `-Yolo` / `--yolo`
 so tool permission prompts do not strand the child in an unattended tab. This
@@ -124,10 +154,12 @@ Keep ordinary local launches at normal permissions unless separately authorized.
 Do not restart or change permissions on an existing child just to apply this recipe.
 
 For `parent` mode, the launcher MUST include this in the initial remote task brief,
-substituting the coordinator's exact ID (not an alias or the launcher's ID):
+substituting the resolved reporting owner's exact ID (not an alias or the
+bootstrap launcher's ID). The coordinator below is that owner session; it may
+itself report upward, with the user at the top:
 
-> The user is interacting through coordinator session `<coordinator-session-id>`.
-> This original requester is your sole reporting owner. Establish direct contact
+> Your sole reporting owner is coordinator session `<coordinator-session-id>`.
+> Establish direct contact
 > with that exact ID only when input is needed or the task is complete. Send one
 > consolidated completion report and actionable questions/blockers only there,
 > not per-finding progress or courtesy acknowledgments, and never to the
@@ -153,8 +185,10 @@ contact, route decisions through the coordinator, or send completion to either
 the requester or launcher. Explicit user requests can authorize a scoped report
 or change of reporting mode later; do not infer a switch from ordinary follow-up.
 
-In parent mode, the coordinator presents the question using its normal question UI
-and returns the actual answer to the child's exact ID with the request ID.
+In parent mode, the coordinator routes user decisions upward through its own
+reporting hierarchy, or presents the question using its normal question UI if it
+reports directly to the user. It returns the actual answer to the new session's
+exact ID with the request ID.
 Never invent a response or auto-approve. A Relay reply cannot dismiss an already
 open native dialog, approve permissions, complete sign-in/MFA, or grant folder
 trust. Report such blockers for the user to handle through supported UI.

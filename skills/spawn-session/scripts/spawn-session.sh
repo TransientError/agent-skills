@@ -173,7 +173,7 @@ node -e '
 const [status, session_id, name, working_directory, model, agent, handle, kitty_address, kitty_started, resume, reporting_mode, start_count, ...args] = process.argv.slice(1);
 const reporting_instructions = reporting_mode === "user"
     ? "Reporting mode: user. The user drives this tab directly. Keep findings, progress, plans, questions, blockers, decisions, action receipts, and completion in this tab. Do not send unsolicited Relay updates or task acknowledgments to the parent or launcher. Report to another session only when the user explicitly requests it."
-    : "Reporting mode: parent. Report only to the exact requester session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.";
+    : "Reporting mode: parent. Report only to the exact reporting owner session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.";
 console.log(JSON.stringify({
     status, session_id, name: name || null, resume: resume || null, working_directory, terminal: "kitty",
     focus: kitty_started === "true" ? "new-window-may-take-focus" : "keep-focus",

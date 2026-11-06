@@ -455,6 +455,13 @@ Start the child as a requested Copilot agent profile with `-Agent 'doc-review'`
 (PowerShell) or `--agent doc-review` (Bash), including when resuming history.
 The profile must already be available to Copilot in the child's directory/home;
 omitting this option leaves agent selection to Copilot, not the parent's profile.
+The user is always at the top of the reporting hierarchy. A requested **peer**
+reports to the same owner as the requesting session; a **child** reports to the
+requesting session itself. A remote-host bootstrap launcher does not change that
+owner. Peers reporting directly to the user use `user` mode; peers sharing another
+session as owner, and children, use `parent` mode with that owner's exact ID in
+the task brief. Relationship and delivery mode are separate.
+
 Choose `-ReportingMode user` / `--reporting-mode user` when the user will drive
 the tab directly: findings, questions, and completion stay in that tab, with no
 unsolicited Relay updates. The default `parent` mode sends a consolidated
@@ -484,10 +491,10 @@ Supply its existing working directory; this is not attachment to a running peer.
 helper locally over a shared Relay mesh and return the child's exact ID.
 The explicitly user-authorized remote workflow uses `-Yolo` / `--yolo` for that
 child only. In `parent` reporting mode its brief routes questions and proposed plans through
-Relay to the user-facing coordinator's exact ID, rather than strand optional
-dialogs in a remote tab. The coordinator asks the user and relays the actual
+Relay to the resolved reporting owner's exact ID, rather than strand optional
+dialogs in a remote tab. That owner routes user decisions upward as needed and relays the actual
 answer; this cannot answer native dialogs, sign-in/MFA, or folder-trust prompts.
-In parent mode the original requester is the sole reporting owner. After handoff, the
+In parent mode the resolved owner is the sole reporting recipient. After handoff, the
 child sends consolidated completion/input blockers only to that session, not the intermediate
 host-local launcher; the launcher does not monitor or forward task updates.
 Local launches retain normal permissions unless separately authorized.

@@ -139,7 +139,7 @@ try {
         reporting_instructions = $(if ($ReportingMode -eq 'user') {
             'Reporting mode: user. The user drives this tab directly. Keep findings, progress, plans, questions, blockers, decisions, action receipts, and completion in this tab. Do not send unsolicited Relay updates or task acknowledgments to the parent or launcher. Report to another session only when the user explicitly requests it.'
         } else {
-            'Reporting mode: parent. Report only to the exact requester session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.'
+            'Reporting mode: parent. Report only to the exact reporting owner session ID in the task brief, never to an intermediate launcher. Send one consolidated completion report and actionable blockers or questions that need input; do not send per-finding updates, routine progress, courtesy acknowledgments, or duplicate reports.'
         })
         command = $command
     }
