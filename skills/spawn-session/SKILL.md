@@ -376,7 +376,7 @@ kills. Killing Copilot or its parent shell does not reliably remove the tab.
 It returns JSON with the title, Terminal window handle, runtime ID, and status.
 `planned` is inspection only; `closed` verifies tab removal, not process-tree exit
 or saved work. The helper never force-kills remaining processes. Closing Kitty peers
-is not implemented; do not run Windows UI Automation or Bash tests through WSL.
+is not implemented; do not run Windows UI Automation through WSL.
 
 ## References
 

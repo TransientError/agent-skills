@@ -132,7 +132,6 @@ service, arbitrary styling API, or aligned-code-table fallback.
   after the process exits. It then verifies those formats are available, without
   reading their content.
 - CF_HTML offsets are UTF-8 **byte** offsets, including the fixed-width header.
-  Keep the renderer and its non-ASCII offset tests together when modifying it.
 - Clipboard access requires the same interactive Windows desktop as the user.
   Clipboard locks, remote/headless sessions, or target-editor restrictions may
   prevent copying or retaining formatting; report failures, do not install

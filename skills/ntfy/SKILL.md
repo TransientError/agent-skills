@@ -35,8 +35,8 @@ not encryption or an account access-control policy.
 ## Workflow
 
 1. Confirm that the user requested this notification or explicitly authorized the
-   completion/blocker event. Creating or testing the skill is not permission to
-   publish a live notification.
+   completion/blocker event. Setup checks, previews, and dry runs are not
+   permission to publish a live notification.
 2. Identify the sending session and requested task, then summarize what happened
    using **Notification content** below. Bare "Task finished." or "Input is needed."
    messages are insufficient when several sessions or scheduled tasks are running.
@@ -106,7 +106,7 @@ Omit the dry-run switch only to publish an authorized notification. Both accept:
 - `TopicFile` / `--topic-file`: optional private file path, never the topic value.
 - `Server` / `--server`: defaults to `https://ntfy.sh`; use a different trusted
   server only when the user requests it. HTTPS is required except for HTTP
-  loopback addresses used in local tests.
+  loopback addresses explicitly selected for local validation.
 
 Helpers POST UTF-8 JSON to the server root, not a topic-bearing URL. They do not
 follow redirects, retry, print the topic, or echo server response bodies. Payloads
